@@ -602,12 +602,22 @@
                 const x = (parent1.x + parent2.x) / 2;
                 const y = Math.max(parent1.y, parent2.y) + 80;
                 
-                // Ask for gender
-                const gender = prompt("Child gender: M for male, F for female", "M");
-                if (!gender || (gender !== 'M' && gender !== 'F')) return;
+                // Ask for gender with better validation
+                let gender;
+                while (true) {
+                    const input = prompt("Child gender: M for male, F for female", "M");
+                    if (input === null) return; // User cancelled
+                    gender = input.toUpperCase().trim();
+                    if (gender === 'M' || gender === 'F') break;
+                    alert("Please enter 'M' for male or 'F' for female");
+                }
+                
+                // Ask if this is a hypothetical child
+                const isHypothetical = confirm("Is this a hypothetical child (unborn/potential)?\n\nClick OK for hypothetical, Cancel for real child");
                 
                 const child = new Individual(x, y, gender, this.nextId++);
                 child.parents = [parent1, parent2];
+                child.hypothetical = isHypothetical;
                 
                 parent1.children.push(child);
                 parent2.children.push(child);
@@ -618,6 +628,10 @@
                 
                 child.calculateFromParents();
                 this.draw();
+                
+                // Show status message
+                const statusMsg = document.getElementById('statusMessage');
+                statusMsg.textContent = `Added ${isHypothetical ? 'hypothetical ' : ''}child with probability calculations based on parents`;
             }
             
             /**
@@ -914,6 +928,11 @@
                 let logLikelihood = 0;
                 
                 for (let individual of this.individuals) {
+                    // Skip hypothetical individuals - they don't contribute to likelihood
+                    if (individual.hypothetical) {
+                        continue;
+                    }
+                    
                     if (individual.affected) {
                         // Probability of being affected (pos-pos)
                         const prob = individual.probabilities[3];
@@ -1137,8 +1156,8 @@
                 // Store original probabilities
                 const originalProbs = [...individual.probabilities];
                 
-                // Propose a small change
-                const changeAmount = 0.01;
+                // Propose a meaningful change (increased from 0.01 to 0.05 for better optimization)
+                const changeAmount = 0.05;
                 const changeType = Math.random() < 0.5 ? 'neg-neg' : 'carrier';
                 console.log(`Proposing change type: ${changeType}, amount: ${changeAmount}`);
                 
@@ -1218,11 +1237,25 @@
                     // Reject change - restore original probabilities
                     individual.probabilities = originalProbs;
                     this.pedigreeChart.updateAllProbabilities();
+                    this.noImprovementCount++;
                     console.log("CHANGE REJECTED - probabilities restored");
                 }
                 
                 this.iterations++;
-                this.temperature *= this.coolingRate;
+                
+                // Adaptive cooling: only cool down if we're making progress
+                // If no improvement for a while, maintain higher temperature for exploration
+                if (this.noImprovementCount < 100) {
+                    // Making progress - cool down normally
+                    this.temperature *= this.coolingRate;
+                } else if (this.noImprovementCount < 500) {
+                    // Slow progress - cool down more slowly
+                    this.temperature *= 0.9995;
+                } else {
+                    // No progress - maintain temperature for exploration
+                    // Only very slight cooling to prevent complete stagnation
+                    this.temperature *= 0.9999;
+                }
                 
                 // Update display
                 document.getElementById('iterationCount').textContent = this.iterations;

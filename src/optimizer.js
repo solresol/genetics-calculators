@@ -26,7 +26,7 @@ export class Optimizer {
         }
         const individual = unaffected[Math.floor(Math.random() * unaffected.length)];
         const originalProbs = [...individual.probabilities];
-        const changeAmount = 0.01;
+        const changeAmount = 0.05;
         if (Math.random() < 0.5) {
             const change = (Math.random() - 0.5) * changeAmount;
             individual.probabilities[0] = Math.max(0, Math.min(1, individual.probabilities[0] + change));
@@ -72,9 +72,21 @@ export class Optimizer {
         } else {
             individual.probabilities = originalProbs;
             this.pedigree.updateAllProbabilities();
+            this.noImprovementCount++;
         }
         this.iterations++;
-        this.temperature *= this.coolingRate;
+        
+        // Adaptive cooling: only cool down if we're making progress
+        if (this.noImprovementCount < 100) {
+            // Making progress - cool down normally
+            this.temperature *= this.coolingRate;
+        } else if (this.noImprovementCount < 500) {
+            // Slow progress - cool down more slowly
+            this.temperature *= 0.9995;
+        } else {
+            // No progress - maintain temperature for exploration
+            this.temperature *= 0.9999;
+        }
         return true;
     }
 
