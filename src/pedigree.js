@@ -42,6 +42,25 @@ export class Pedigree {
                 individual.calculateFromParents();
             }
         }
+
+        for (const child of this.individuals) {
+            if (child.affected && child.parents.length === 2) {
+                const [parent1, parent2] = child.parents;
+                for (const parent of [parent1, parent2]) {
+                    if (!parent.affected) {
+                        parent.probabilities = [0, 0.5, 0.5, 0];
+                        parent.validateAndNormalizeProbabilities();
+                        parent.originalProbabilities = [...parent.probabilities];
+                    }
+                }
+            }
+        }
+
+        for (const individual of this.individuals) {
+            if (individual.parents.length === 2) {
+                individual.calculateFromParents();
+            }
+        }
     }
 
     calculateNegativeLogLikelihood() {

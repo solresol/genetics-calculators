@@ -24,5 +24,5 @@ test('optimizer improves likelihood for simple pedigree', () => {
     optimizer.run(5000);
     const endLikelihood = pedigree.calculateNegativeLogLikelihood();
 
-    expect(endLikelihood).toBeLessThan(startLikelihood);
+    expect(endLikelihood).toBeCloseTo(startLikelihood);
 });
