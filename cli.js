@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-import fs from 'fs';
-import { Pedigree } from './src/pedigree.js';
+import { readPedigree } from './src/io.js';
 import { Optimizer } from './src/optimizer.js';
 
 function mulberry32(a) {
@@ -17,34 +16,6 @@ function setRandomSeed(seed) {
   Math.random = prng;
 }
 
-function parsePedigree(filePath) {
-  const json = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  const condition = json.condition || 'cf';
-  const pedigree = new Pedigree(condition);
-  const map = new Map();
-  for (const info of json.individuals) {
-    const ind = pedigree.addIndividual(info.gender);
-    map.set(info.id, ind);
-    if (info.affected) ind.setAffected(true);
-    if (info.race) ind.setRace(info.race, condition);
-    if (info.hypothetical) ind.hypothetical = true;
-  }
-  for (const info of json.individuals) {
-    if (info.parents) {
-      const child = map.get(info.id);
-      if (info.parents[0]) {
-        pedigree.addParentChild(map.get(info.parents[0]), child);
-      }
-      if (info.parents[1]) {
-        pedigree.addParentChild(map.get(info.parents[1]), child);
-      }
-      if (info.parents.length === 2) {
-        pedigree.addPartnership(map.get(info.parents[0]), map.get(info.parents[1]));
-      }
-    }
-  }
-  return pedigree;
-}
 
 function main() {
   const args = process.argv.slice(2);
@@ -56,7 +27,7 @@ function main() {
   const seed = args.length > 1 ? parseInt(args[1], 10) : Date.now();
   const iters = args.length > 2 ? parseInt(args[2], 10) : 10000;
   setRandomSeed(seed);
-  const pedigree = parsePedigree(file);
+  const pedigree = readPedigree(file);
   pedigree.updateAllProbabilities();
   const optimizer = new Optimizer(pedigree);
   optimizer.run(iters);
