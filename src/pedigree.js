@@ -82,6 +82,7 @@ export class Pedigree {
     calculateNegativeLogLikelihood() {
         let logLikelihood = 0;
         for (const individual of this.individuals) {
+            if (individual.hypothetical) continue;
             if (individual.affected) {
                 const prob = individual.probabilities[3];
                 logLikelihood += Math.log(prob > 0 ? prob : 1e-10);

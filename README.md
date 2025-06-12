@@ -74,10 +74,15 @@ This expects `pedigree.json` to contain a structure like:
   "individuals": [
     {"id": 1, "gender": "M", "race": "general"},
     {"id": 2, "gender": "F", "race": "general"},
-    {"id": 3, "gender": "M", "parents": [1,2], "affected": true}
+    {"id": 3, "gender": "M", "parents": [1,2], "affected": true},
+    {"id": 4, "gender": "F", "parents": [1,2], "hypothetical": true}
   ]
 }
 ```
 
-The program prints a table of updated genotype probabilities for each
-individual.
+Individuals may include a `hypothetical` flag to indicate that they are
+not yet born. Such individuals are excluded from the likelihood
+calculation but their genotype probabilities are computed from their
+parents. The program prints a table of updated genotype probabilities
+for each individual, including any hypothetical children.
+Sample pedigrees that demonstrate these features can be found in the `scenarios` directory.
