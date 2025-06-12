@@ -57,3 +57,27 @@ Install dependencies and run the automated tests:
 npm install
 NODE_OPTIONS=--experimental-vm-modules npm test
 ```
+
+## Command Line Usage
+
+Run the optimiser on a pedigree defined in a JSON file:
+
+```bash
+node cli.js pedigree.json 123 5000
+```
+
+This expects `pedigree.json` to contain a structure like:
+
+```json
+{
+  "condition": "cf",
+  "individuals": [
+    {"id": 1, "gender": "M", "race": "general"},
+    {"id": 2, "gender": "F", "race": "general"},
+    {"id": 3, "gender": "M", "parents": [1,2], "affected": true}
+  ]
+}
+```
+
+The program prints a table of updated genotype probabilities for each
+individual.
