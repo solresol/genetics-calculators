@@ -27,6 +27,7 @@ function parsePedigree(filePath) {
     map.set(info.id, ind);
     if (info.affected) ind.setAffected(true);
     if (info.race) ind.setRace(info.race, condition);
+    if (info.hypothetical) ind.hypothetical = true;
   }
   for (const info of json.individuals) {
     if (info.parents) {
