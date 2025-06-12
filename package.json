@@ -2,6 +2,9 @@
   "name": "genetics-calculators",
   "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "pedigree-opt": "./cli.js"
+  },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest"
   },
