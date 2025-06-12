@@ -86,3 +86,22 @@ calculation but their genotype probabilities are computed from their
 parents. The program prints a table of updated genotype probabilities
 for each individual, including any hypothetical children.
 Sample pedigrees that demonstrate these features can be found in the `scenarios` directory.
+
+### JSON Pedigree Format
+
+A pedigree file contains a `condition` and an array of `individuals`.  Each
+individual can include the following properties:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | number | Unique identifier used for references. |
+| `gender` | `'M'` or `'F'` | Sex of the individual. |
+| `parents` | `[id,id]` | (optional) IDs of the parents. |
+| `race` | string | (optional) Population used for base carrier frequency. |
+| `affected` | boolean | (optional) Mark as affected. |
+| `hypothetical` | boolean | (optional) Exclude from likelihood calculations. |
+| `x`/`y` | number | (optional) Display coordinates for editors. |
+
+Coordinates are optional and allow visual tools to store the layout of the
+pedigree.  They are ignored by the optimiser but preserved when reading and
+writing files.
