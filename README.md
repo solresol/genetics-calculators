@@ -19,6 +19,7 @@ probabilities for each person in the chart. The user can:
   `1.0` for pos&#8209;pos and `0.0` for the other states.
 * **Add hypothetical children** between any two individuals to see the resulting
   probability distribution.
+* **Load a pedigree from a JSON file** using the same format as the CLI.
 
 The application repeatedly updates these probabilities to minimise the negative
 log‑likelihood of the observed affected/unaffected pattern. The optimiser
