@@ -82,4 +82,26 @@ test('hypothetical child does not affect likelihood', () => {
     expect(child.probabilities[3]).toBeCloseTo(0.25);
 });
 
+test('hypothetical child with affected sibling has 25% affected risk', () => {
+    const ped = new Pedigree('cf');
+    const f = ped.addIndividual('M');
+    const m = ped.addIndividual('F');
+    ped.addPartnership(f, m);
+
+    const affected = ped.addIndividual('M');
+    affected.setAffected(true);
+    ped.addParentChild(f, affected);
+    ped.addParentChild(m, affected);
+
+    const hypo = ped.addIndividual('F');
+    hypo.hypothetical = true;
+    ped.addParentChild(f, hypo);
+    ped.addParentChild(m, hypo);
+
+    ped.updateAllProbabilities();
+
+    expect(hypo.probabilities[3]).toBeCloseTo(0.25);
+    expect(hypo.probabilities[0]).toBeCloseTo(0.25);
+});
+
 

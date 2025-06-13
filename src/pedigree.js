@@ -70,8 +70,12 @@ export class Pedigree {
                 );
                 for (const sib of siblings) {
                     if (!sib.affected) {
-                        sib.probabilities = [0, 0.25, 0.25, 0.5];
-                        sib.validateAndNormalizeProbabilities();
+                        // Recompute the sibling probabilities from the
+                        // now-obligate carrier parents rather than assuming
+                        // a fixed distribution. This correctly yields a
+                        // 25% chance of being affected for hypothetical
+                        // children.
+                        sib.calculateFromParents();
                         sib.originalProbabilities = [...sib.probabilities];
                     }
                 }

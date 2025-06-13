@@ -31,9 +31,23 @@ function main() {
   pedigree.updateAllProbabilities();
   const optimizer = new Optimizer(pedigree);
   optimizer.run(iters);
+  console.log('[Person]\t[Clear]\t[--------Carrier------]\t[Affected]');
   for (const ind of pedigree.individuals) {
-    const probs = ind.probabilities.map(p => p.toFixed(4)).join('\t');
-    console.log(`${ind.id}\t${probs}`);
+    const clear = ind.probabilities[0].toFixed(4);
+    const c1 = ind.probabilities[1];
+    const c2 = ind.probabilities[2];
+    const carrierTotal = c1 + c2;
+    let carrierStr = `${c1.toFixed(4)}+${c2.toFixed(4)}=${carrierTotal.toFixed(4)}`;
+    let affectedStr = ind.probabilities[3].toFixed(4);
+
+    if (carrierTotal > 0.75) {
+      carrierStr = `\x1b[33m${carrierStr}\x1b[0m`;
+    }
+    if (ind.probabilities[3] > 0.75) {
+      affectedStr = `\x1b[31m${affectedStr}\x1b[0m`;
+    }
+
+    console.log(`${ind.id}\t${clear}\t${carrierStr}\t${affectedStr}`);
   }
 }
 
