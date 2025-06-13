@@ -16,12 +16,19 @@ export function parsePedigreeObject(obj) {
     }
     for (const info of obj.individuals) {
         if (info.parents) {
+            if (info.parents.length > 2) {
+                throw new Error(`Individual ${info.id} has more than two parents`);
+            }
             const child = map.get(info.id);
             if (info.parents[0]) {
-                pedigree.addParentChild(map.get(info.parents[0]), child);
+                const p1 = map.get(info.parents[0]);
+                if (!p1) throw new Error(`Missing parent ${info.parents[0]} for individual ${info.id}`);
+                pedigree.addParentChild(p1, child);
             }
             if (info.parents[1]) {
-                pedigree.addParentChild(map.get(info.parents[1]), child);
+                const p2 = map.get(info.parents[1]);
+                if (!p2) throw new Error(`Missing parent ${info.parents[1]} for individual ${info.id}`);
+                pedigree.addParentChild(p2, child);
             }
             if (info.parents.length === 2) {
                 pedigree.addPartnership(map.get(info.parents[0]), map.get(info.parents[1]));
