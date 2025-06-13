@@ -1,0 +1,38 @@
+import { parsePedigreeObject, pedigreeToObject } from '../src/io.js';
+import { autoLayout } from '../src/layout.js';
+import { Pedigree } from '../src/pedigree.js';
+
+/** Verify that coordinates are parsed and written */
+test('parse and write coordinates', () => {
+    const obj = {
+        condition: 'cf',
+        individuals: [
+            { id: 1, gender: 'M', x: 10, y: 20 },
+            { id: 2, gender: 'F' }
+        ]
+    };
+    const ped = parsePedigreeObject(obj);
+    expect(ped.individuals[0].x).toBe(10);
+    expect(ped.individuals[0].y).toBe(20);
+
+    const out = pedigreeToObject(ped, true);
+    expect(out.individuals[0].x).toBe(10);
+    expect(out.individuals[0].y).toBe(20);
+});
+
+/** Basic check that autoLayout assigns generation based y */
+test('autoLayout assigns coordinates', () => {
+    const ped = new Pedigree('cf');
+    const f = ped.addIndividual('M');
+    const m = ped.addIndividual('F');
+    ped.addPartnership(f, m);
+    const c = ped.addIndividual('M');
+    ped.addParentChild(f, c);
+    ped.addParentChild(m, c);
+
+    autoLayout(ped, { xSpacing: 50, ySpacing: 40 });
+
+    expect(f.y).toBe(0);
+    expect(m.y).toBe(0);
+    expect(c.y).toBe(40);
+});

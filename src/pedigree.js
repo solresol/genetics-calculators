@@ -61,11 +61,28 @@ export class Pedigree {
                 individual.calculateFromParents();
             }
         }
+
+        for (const child of this.individuals) {
+            if (child.affected && child.parents.length === 2) {
+                const [parent1, parent2] = child.parents;
+                const siblings = parent1.children.filter(c =>
+                    parent2.children.includes(c) && c !== child
+                );
+                for (const sib of siblings) {
+                    if (!sib.affected) {
+                        sib.probabilities = [0, 0.25, 0.25, 0.5];
+                        sib.validateAndNormalizeProbabilities();
+                        sib.originalProbabilities = [...sib.probabilities];
+                    }
+                }
+            }
+        }
     }
 
     calculateNegativeLogLikelihood() {
         let logLikelihood = 0;
         for (const individual of this.individuals) {
+            if (individual.hypothetical) continue;
             if (individual.affected) {
                 const prob = individual.probabilities[3];
                 logLikelihood += Math.log(prob > 0 ? prob : 1e-10);

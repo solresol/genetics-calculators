@@ -1,0 +1,9 @@
+{
+  "condition": "cf",
+  "individuals": [
+    {"id": 1, "gender": "M", "race": "general"},
+    {"id": 2, "gender": "F", "race": "general"},
+    {"id": 3, "gender": "M", "parents": [1, 2], "affected": true},
+    {"id": 4, "gender": "F", "parents": [1, 2], "hypothetical": true}
+  ]
+}

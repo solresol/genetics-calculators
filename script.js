@@ -732,6 +732,63 @@
                 this.draw();
                 this.updateIndividualInfo();
             }
+
+            /**
+             * Load pedigree data from an object matching the CLI JSON format.
+             * @param {Object} obj
+             */
+            loadFromObject(obj) {
+                this.clear();
+
+                // Set condition and update frequency table
+                if (obj.condition) {
+                    document.getElementById('conditionSelect').value = obj.condition;
+                    updateFrequencyTable();
+                }
+
+                const map = new Map();
+                let maxId = 0;
+
+                // Create individuals
+                for (const info of obj.individuals) {
+                    const x = typeof info.x === 'number' ? info.x : 50;
+                    const y = typeof info.y === 'number' ? info.y : 50;
+                    const ind = new Individual(x, y, info.gender, info.id);
+                    if (info.affected) ind.setAffected(true);
+                    if (info.race) ind.setRace(info.race);
+                    if (info.hypothetical) ind.hypothetical = true;
+                    this.individuals.push(ind);
+                    map.set(info.id, ind);
+                    if (info.id > maxId) maxId = info.id;
+                    this.checkNeedsRace(ind);
+                }
+
+                // Create relations
+                for (const info of obj.individuals) {
+                    const child = map.get(info.id);
+                    if (!child || !info.parents) continue;
+                    if (info.parents[0]) {
+                        const p1 = map.get(info.parents[0]);
+                        if (p1) this.addParentChild(p1, child);
+                    }
+                    if (info.parents[1]) {
+                        const p2 = map.get(info.parents[1]);
+                        if (p2) this.addParentChild(p2, child);
+                    }
+                    if (info.parents.length === 2) {
+                        const p1 = map.get(info.parents[0]);
+                        const p2 = map.get(info.parents[1]);
+                        if (p1 && p2) this.addPartnership(p1, p2);
+                    }
+                }
+
+                this.nextId = maxId + 1;
+
+                autoLayout(this);
+                this.updateAllProbabilities();
+                this.draw();
+                this.updateIndividualInfo();
+            }
             
             /**
              * Refresh the info panel with details of the selected individual.
@@ -1046,6 +1103,70 @@
                 freqCell.appendChild(input);
             }
         }
+
+        /**
+         * Automatically layout individuals based on parent-child levels.
+         * @param {PedigreeChart} chart
+         */
+        function autoLayout(chart, options = {}) {
+            const xSpacing = options.xSpacing || 120;
+            const ySpacing = options.ySpacing || 100;
+
+            const levelMap = new Map();
+            const queue = [];
+
+            for (const ind of chart.individuals) {
+                if (ind.parents.length === 0) {
+                    levelMap.set(ind, 0);
+                    queue.push(ind);
+                }
+            }
+
+            while (queue.length) {
+                const ind = queue.shift();
+                const level = levelMap.get(ind);
+                for (const child of ind.children) {
+                    const childLevel = level + 1;
+                    if (!levelMap.has(child) || childLevel > levelMap.get(child)) {
+                        levelMap.set(child, childLevel);
+                        queue.push(child);
+                    }
+                }
+            }
+
+            const groups = new Map();
+            for (const [ind, lvl] of levelMap.entries()) {
+                if (!groups.has(lvl)) groups.set(lvl, []);
+                groups.get(lvl).push(ind);
+            }
+
+            const levels = Array.from(groups.keys()).sort((a, b) => a - b);
+            for (const lvl of levels) {
+                const inds = groups.get(lvl);
+                inds.sort((a, b) => a.id - b.id);
+
+                const ordered = [];
+                const used = new Set();
+                for (const ind of inds) {
+                    if (used.has(ind)) continue;
+                    if (ind.partner && inds.includes(ind.partner)) {
+                        ordered.push(ind, ind.partner);
+                        used.add(ind);
+                        used.add(ind.partner);
+                    } else {
+                        ordered.push(ind);
+                        used.add(ind);
+                    }
+                }
+
+                let x = xSpacing;
+                for (const ind of ordered) {
+                    ind.x = x;
+                    ind.y = lvl * ySpacing + ySpacing;
+                    x += xSpacing;
+                }
+            }
+        }
         
         // Optimization algorithm
         /**
@@ -1327,14 +1448,29 @@
             const canvas = document.getElementById('pedigreeCanvas');
             pedigreeChart = new PedigreeChart(canvas);
             optimizer = new Optimizer(pedigreeChart);
-            
+
             // Set up event listeners
             document.getElementById('conditionSelect').addEventListener('change', updateFrequencyTable);
             document.getElementById('startOptBtn').addEventListener('click', () => optimizer.start());
             document.getElementById('stepOptBtn').addEventListener('click', () => optimizer.stepOnce());
             document.getElementById('stopOptBtn').addEventListener('click', () => optimizer.stop());
             document.getElementById('resetBtn').addEventListener('click', () => optimizer.reset());
-            
+            document.getElementById('loadFileBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());
+            document.getElementById('loadFileInput').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const obj = JSON.parse(reader.result);
+                        pedigreeChart.loadFromObject(obj);
+                    } catch (err) {
+                        alert('Failed to load file: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+
             // Initialize frequency table
             updateFrequencyTable();
         });
