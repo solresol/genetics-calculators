@@ -15,7 +15,13 @@ export class Pedigree {
     }
 
     addParentChild(parent, child) {
-        if (child.parents.length >= 2) {
+        if (!parent || !child) {
+            throw new Error('Parent or child missing');
+        }
+        if (parent === child) {
+            throw new Error('Individual cannot be their own parent');
+        }
+        if (child.parents.length >= 2 && !child.parents.includes(parent)) {
             throw new Error('Child already has two parents');
         }
         if (!child.parents.includes(parent)) {
@@ -23,6 +29,9 @@ export class Pedigree {
         }
         if (!parent.children.includes(child)) {
             parent.children.push(child);
+        }
+        if (child.parents.length > 2) {
+            throw new Error('Child cannot have more than two parents');
         }
         this.relations.push({ type: 'parent', parent, child });
     }

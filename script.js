@@ -656,17 +656,28 @@
              * @param {Individual} child
              */
             addParentChild(parent, child) {
-                // Prevent adding if would create cycles or if child already has 2 parents
-                if (child.parents.length >= 2) {
+                if (!parent || !child) {
+                    alert("Parent or child missing");
+                    return;
+                }
+                if (parent === child) {
+                    alert("An individual cannot be their own parent");
+                    return;
+                }
+                if (child.parents.length >= 2 && !child.parents.includes(parent)) {
                     alert("Child already has two parents!");
                     return;
                 }
-                
+
                 if (!child.parents.includes(parent)) {
                     child.parents.push(parent);
                 }
                 if (!parent.children.includes(child)) {
                     parent.children.push(child);
+                }
+                if (child.parents.length > 2) {
+                    alert("Child cannot have more than two parents!");
+                    return;
                 }
                 this.relations.push({type: 'parent', parent: parent, child: child});
             }
