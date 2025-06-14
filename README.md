@@ -59,6 +59,15 @@ npm install
 NODE_OPTIONS=--experimental-vm-modules npm test
 ```
 
+To create a standalone version of the web interface run:
+
+```bash
+npm run build
+```
+
+This bundles all HTML, CSS and JavaScript into `dist/pedigree_analyzer.html`
+which can be opened directly without a web server.
+
 ## Command Line Usage
 
 Run the optimiser on a pedigree defined in a JSON file:

@@ -1,7 +1,5 @@
-import { populationFrequencies } from './src/population.js';
 import { Individual as BaseIndividual } from './src/individual.js';
 import { Optimizer as BaseOptimizer } from './src/optimizer.js';
-import { autoLayout } from './src/layout.js';
 
 class Individual extends BaseIndividual {
     constructor(x, y, gender, id) {
