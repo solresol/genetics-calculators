@@ -1,223 +1,23 @@
-        /**
-         * Represents a person in the pedigree.
-         */
-        class Individual {
-            /**
-             * Create an individual.
-             * @param {number} x - X coordinate on the canvas.
-             * @param {number} y - Y coordinate on the canvas.
-             * @param {'M'|'F'} gender - Gender of the individual.
-             * @param {number} id - Unique identifier.
-             */
-            constructor(x, y, gender, id) {
-                this.x = x;
-                this.y = y;
-                this.gender = gender; // 'M' or 'F'
-                this.id = id;
-                this.affected = false;
-                this.race = null;
-                this.parents = [];
-                this.children = [];
-                this.partner = null;
-                this.hypothetical = false;
-                
-                // Genotype probabilities: [neg-neg, neg-pos, pos-neg, pos-pos]
-                this.probabilities = [0.25, 0.25, 0.25, 0.25];
-                this.originalProbabilities = [...this.probabilities];
-                this.frozen = false;
-                
-                console.log(`Created individual ${id} with initial probabilities: [${this.probabilities.join(', ')}]`);
-            }
-            
-            /**
-             * Mark the individual as affected or unaffected.
-             * @param {boolean} affected - Whether the individual is affected.
-             */
-            setAffected(affected) {
-                this.affected = affected;
-                if (affected) {
-                    this.probabilities = [0.0, 0.0, 0.0, 1.0];
-                    this.frozen = true;
-                } else {
-                    this.probabilities = [1.0, 0.0, 0.0, 0.0]; // Default unaffected
-                    this.frozen = false;
-                }
-                
-                // Validate and normalize
-                this.validateAndNormalizeProbabilities();
-                this.originalProbabilities = [...this.probabilities];
-            }
-            
-            /**
-             * Ensure probabilities are valid and sum to one.
-             */
-            validateAndNormalizeProbabilities() {
-                // Check for invalid values
-                for (let i = 0; i < this.probabilities.length; i++) {
-                    if (isNaN(this.probabilities[i]) || this.probabilities[i] < 0) {
-                        console.error(`Invalid probability ${this.probabilities[i]} at index ${i} for individual ${this.id}`);
-                        this.probabilities[i] = 0;
-                    }
-                }
-                
-                // Normalize to sum to 1
-                const sum = this.probabilities.reduce((a, b) => a + b, 0);
-                if (sum > 0) {
-                    this.probabilities = this.probabilities.map(p => p / sum);
-                } else {
-                    // All probabilities were 0 or invalid, set to default
-                    this.probabilities = [0.25, 0.25, 0.25, 0.25];
-                }
-                
-                console.log(`Individual ${this.id} probabilities normalized: [${this.probabilities.map(p => p.toFixed(4)).join(', ')}]`);
-            }
-            
-            /**
-             * Set the individual's race and update probabilities if needed.
-             * @param {string} race - Population key used for frequencies.
-             */
-            setRace(race) {
-                this.race = race;
-                if (this.parents.length === 0 && !this.frozen) {
-                    this.updateFromPopulationFrequency();
-                }
-            }
-            
-            /**
-             * Initialize founder probabilities from population frequencies.
-             */
-            updateFromPopulationFrequency() {
-                if (!this.race || this.frozen) return;
-                
-                const frequency = getCarrierFrequency(this.race);
-                if (frequency !== null) {
-                    console.log(`Updating individual ${this.id} with population frequency ${frequency} for race ${this.race}`);
-                    
-                    // For founders, use Hardy-Weinberg equilibrium
-                    const q = frequency; // carrier frequency
-                    const p = 1 - q;
-                    
-                    if (!this.affected) {
-                        this.probabilities = [
-                            p * p,     // neg-neg
-                            p * q,     // neg-pos
-                            q * p,     // pos-neg
-                            q * q      // pos-pos
-                        ];
-                    }
-                    
-                    this.validateAndNormalizeProbabilities();
-                    this.originalProbabilities = [...this.probabilities];
-                }
-            }
-            
-            /**
-             * Update genotype probabilities based on parents.
-             */
-            calculateFromParents() {
-                if (this.parents.length !== 2 || this.frozen) return;
-                
-                const [parent1, parent2] = this.parents;
-                const newProbs = [0, 0, 0, 0];
-                
-                console.log(`Calculating probabilities for individual ${this.id} from parents ${parent1.id} and ${parent2.id}`);
-                console.log(`Parent ${parent1.id} probabilities: [${parent1.probabilities.map(p => p.toFixed(3)).join(', ')}]`);
-                console.log(`Parent ${parent2.id} probabilities: [${parent2.probabilities.map(p => p.toFixed(3)).join(', ')}]`);
-                
-                // Calculate offspring probabilities from parental genotypes
-                for (let i = 0; i < 4; i++) {
-                    for (let j = 0; j < 4; j++) {
-                        const p1Prob = parent1.probabilities[i];
-                        const p2Prob = parent2.probabilities[j];
-                        
-                        if (p1Prob > 0 && p2Prob > 0) {
-                            // Convert index to genotype
-                            const p1Geno = indexToGenotype(i);
-                            const p2Geno = indexToGenotype(j);
-                            
-                            console.log(`  Parent combination: ${parent1.id}[${i}]=${p1Prob.toFixed(3)} × ${parent2.id}[${j}]=${p2Prob.toFixed(3)}`);
-                            console.log(`    Genotypes: [${p1Geno}] × [${p2Geno}]`);
-                            
-                            // Calculate offspring genotype probabilities
-                            const offspringProbs = calculateOffspringProbabilities(p1Geno, p2Geno);
-                            
-                            for (let k = 0; k < 4; k++) {
-                                const contribution = p1Prob * p2Prob * offspringProbs[k];
-                                newProbs[k] += contribution;
-                                if (contribution > 0) {
-                                    console.log(`    Contribution to offspring[${k}]: ${contribution.toFixed(4)}`);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Validate probabilities
-                const sum = newProbs.reduce((a, b) => a + b, 0);
-                console.log(`Individual ${this.id} calculated probabilities: [${newProbs.map(p => p.toFixed(3)).join(', ')}], sum: ${sum.toFixed(3)}`);
-                
-                if (Math.abs(sum - 1.0) > 0.001) {
-                    console.error(`ERROR: Probabilities don't sum to 1.0 for individual ${this.id}! Sum = ${sum}`);
-                }
-                
-                for (let prob of newProbs) {
-                    if (prob < 0 || prob > 1) {
-                        console.error(`ERROR: Invalid probability ${prob} for individual ${this.id}!`);
-                    }
-                }
-                
-                this.probabilities = newProbs;
-                this.validateAndNormalizeProbabilities();
-            }
-        }
-        
-        /**
-         * Convert probability array index to genotype.
-         * @param {number} index
-         * @returns {string[]}
-         */
-        function indexToGenotype(index) {
-            const genotypes = [
-                ['neg', 'neg'],
-                ['neg', 'pos'],
-                ['pos', 'neg'],
-                ['pos', 'pos']
-            ];
-            return genotypes[index];
-        }
-        
-        /**
-         * Calculate offspring genotype probabilities from parental genotypes.
-         * @param {string[]} parent1Geno
-         * @param {string[]} parent2Geno
-         * @returns {number[]}
-         */
-        function calculateOffspringProbabilities(parent1Geno, parent2Geno) {
-            const probs = [0, 0, 0, 0]; // [neg-neg, neg-pos, pos-neg, pos-pos]
-            
-            console.log(`Calculating offspring from parent1: [${parent1Geno}] and parent2: [${parent2Geno}]`);
-            
-            // Each parent contributes one allele - simple Mendelian genetics
-            for (let allele1 of parent1Geno) {
-                for (let allele2 of parent2Geno) {
-                    // Offspring gets allele1 from parent1 and allele2 from parent2
-                    let index;
-                    
-                    if (allele1 === 'neg' && allele2 === 'neg') index = 0;      // neg-neg
-                    else if (allele1 === 'neg' && allele2 === 'pos') index = 1; // neg-pos  
-                    else if (allele1 === 'pos' && allele2 === 'neg') index = 2; // pos-neg
-                    else if (allele1 === 'pos' && allele2 === 'pos') index = 3; // pos-pos
-                    
-                    // Each combination has probability = 1/(2*2) = 0.25
-                    probs[index] += 0.25;
-                    
-                    console.log(`  ${allele1}-${allele2} -> index ${index}, running total: ${probs[index]}`);
-                }
-            }
-            
-            console.log(`Final offspring probabilities: [${probs.map(p => p.toFixed(3)).join(', ')}]`);
-            return probs;
-        }
+import { populationFrequencies } from './src/population.js';
+import { Individual as BaseIndividual } from './src/individual.js';
+import { Optimizer as BaseOptimizer } from './src/optimizer.js';
+import { autoLayout } from './src/layout.js';
+
+class Individual extends BaseIndividual {
+    constructor(x, y, gender, id) {
+        super(id, gender);
+        this.x = x;
+        this.y = y;
+    }
+
+    setRace(race) {
+        super.setRace(race, document.getElementById('conditionSelect').value);
+    }
+
+    updateFromPopulationFrequency() {
+        super.updateFromPopulationFrequency(document.getElementById('conditionSelect').value);
+    }
+}
         
         /**
          * Interactive canvas used to build pedigrees.
@@ -1183,273 +983,83 @@
         /**
          * Simple simulated annealing optimizer for genotype probabilities.
          */
-        class Optimizer {
-            /**
-             * @param {PedigreeChart} pedigreeChart
-             */
-            constructor(pedigreeChart) {
-                this.pedigreeChart = pedigreeChart;
-                this.running = false;
-                this.iterations = 0;
-                this.currentLikelihood = 0;
-                this.bestLikelihood = Infinity;
-                this.noImprovementCount = 0;
-                this.temperature = 1.0;
-                this.coolingRate = 0.995;
-                this.debugMode = true;
-                this.timeoutId = null; // Store timeout ID for cancellation
-            }
-            
-            /** Start the optimization loop. */
-            start() {
-                this.running = true;
-                this.iterations = 0;
-                this.currentLikelihood = this.pedigreeChart.calculateNegativeLogLikelihood();
-                this.bestLikelihood = this.currentLikelihood;
-                this.noImprovementCount = 0;
-                this.temperature = 1.0;
-                
-                console.log("=== OPTIMIZATION STARTED ===");
-                console.log(`Initial negative log-likelihood: ${this.currentLikelihood}`);
-                console.log(`Number of individuals: ${this.pedigreeChart.individuals.length}`);
-                
-                document.getElementById('startOptBtn').disabled = true;
-                document.getElementById('stepOptBtn').disabled = true;
-                document.getElementById('stopOptBtn').disabled = false;
-                document.getElementById('optStatus').textContent = 'Running';
-                
-                this.step();
-            }
-            
-            /** Perform a single optimization iteration. */
-            stepOnce() {
-                if (this.running) {
-                    console.log("Cannot step while optimization is running");
-                    return;
-                }
-                
-                // Initialize if first step
-                if (this.iterations === 0) {
-                    this.currentLikelihood = this.pedigreeChart.calculateNegativeLogLikelihood();
-                    this.bestLikelihood = this.currentLikelihood;
-                    this.noImprovementCount = 0;
-                    this.temperature = 1.0;
-                    console.log("=== SINGLE STEP MODE ===");
-                    console.log(`Initial negative log-likelihood: ${this.currentLikelihood}`);
-                }
-                
-                this.performSingleStep();
-            }
-            
-            /** Stop the optimization process. */
-            stop() {
-                console.log("=== STOP BUTTON CLICKED ===");
-                this.running = false;
-                
-                // Clear any pending timeout
-                if (this.timeoutId) {
-                    clearTimeout(this.timeoutId);
-                    this.timeoutId = null;
-                    console.log("Cleared pending timeout");
-                }
-                
-                document.getElementById('startOptBtn').disabled = false;
-                document.getElementById('stepOptBtn').disabled = false;
-                document.getElementById('stopOptBtn').disabled = true;
-                document.getElementById('optStatus').textContent = 'Stopped';
-                console.log("=== OPTIMIZATION STOPPED ===");
-            }
-            
-            /**
-             * Execute one simulated annealing step.
-             */
-            performSingleStep() {
-                console.log(`\n--- Iteration ${this.iterations + 1} ---`);
-                console.log(`Current temperature: ${this.temperature.toFixed(4)}`);
-                console.log(`Current negative log-likelihood: ${this.currentLikelihood.toFixed(6)}`);
-                
-                // Pick a random unaffected individual
-                const unaffectedIndividuals = this.pedigreeChart.individuals.filter(
-                    ind => !ind.affected && !ind.frozen && ind.parents.length === 0
-                );
-                
-                console.log(`Unaffected founder individuals available: ${unaffectedIndividuals.length}`);
-                
-                if (unaffectedIndividuals.length === 0) {
-                    console.log("No unaffected founder individuals to optimize - stopping");
-                    this.stop();
-                    return;
-                }
-                
-                const individual = unaffectedIndividuals[Math.floor(Math.random() * unaffectedIndividuals.length)];
-                console.log(`Selected individual ${individual.id} for optimization`);
-                console.log(`Individual ${individual.id} current probabilities:`, individual.probabilities.map(p => p.toFixed(4)));
-                
-                // Store original probabilities
-                const originalProbs = [...individual.probabilities];
-                
-                // Propose a meaningful change (increased from 0.01 to 0.05 for better optimization)
-                const changeAmount = 0.05;
-                const changeType = Math.random() < 0.5 ? 'neg-neg' : 'carrier';
-                console.log(`Proposing change type: ${changeType}, amount: ${changeAmount}`);
-                
-                if (changeType === 'neg-neg') {
-                    // Adjust neg-neg vs others
-                    const change = (Math.random() - 0.5) * changeAmount;
-                    console.log(`Adjusting neg-neg by: ${change.toFixed(4)}`);
-                    individual.probabilities[0] = Math.max(0, Math.min(1, individual.probabilities[0] + change));
-                    
-                    // Redistribute the rest
-                    const remaining = 1 - individual.probabilities[0];
-                    const totalOther = individual.probabilities[1] + individual.probabilities[2] + individual.probabilities[3];
-                    
-                    if (totalOther > 0) {
-                        const scale = remaining / totalOther;
-                        individual.probabilities[1] *= scale;
-                        individual.probabilities[2] *= scale;
-                        individual.probabilities[3] *= scale;
-                    }
-                } else {
-                    // Adjust carrier probabilities (neg-pos and pos-neg should be equal)
-                    const change = (Math.random() - 0.5) * changeAmount;
-                    const currentCarrier = (individual.probabilities[1] + individual.probabilities[2]) / 2;
-                    console.log(`Current carrier probability: ${currentCarrier.toFixed(4)}, proposing change: ${change.toFixed(4)}`);
-                    const newCarrier = Math.max(0, Math.min(0.5, currentCarrier + change));
-                    
-                    individual.probabilities[1] = newCarrier;
-                    individual.probabilities[2] = newCarrier;
-                    
-                    // Redistribute remaining
-                    const remaining = 1 - 2 * newCarrier;
-                    const totalOther = individual.probabilities[0] + individual.probabilities[3];
-                    
-                    if (totalOther > 0) {
-                        const scale = remaining / totalOther;
-                        individual.probabilities[0] *= scale;
-                        individual.probabilities[3] *= scale;
-                    }
-                }
-                
-                // Normalize to ensure sum = 1
-                const sum = individual.probabilities.reduce((a, b) => a + b, 0);
-                if (sum > 0) {
-                    individual.probabilities = individual.probabilities.map(p => p / sum);
-                }
-                
-                console.log(`Individual ${individual.id} proposed probabilities:`, individual.probabilities.map(p => p.toFixed(4)));
-                
-                // Update all dependent probabilities
-                this.pedigreeChart.updateAllProbabilities();
-                
-                // Calculate new likelihood
-                const newLikelihood = this.pedigreeChart.calculateNegativeLogLikelihood();
-                console.log(`New negative log-likelihood: ${newLikelihood.toFixed(6)}`);
-                
-                // Accept or reject change
-                const deltaE = newLikelihood - this.currentLikelihood;
-                console.log(`Delta energy: ${deltaE.toFixed(6)}`);
-                
-                const acceptProb = deltaE < 0 ? 1.0 : Math.exp(-deltaE / this.temperature);
-                const randomVal = Math.random();
-                const accept = randomVal < acceptProb;
-                
-                console.log(`Accept probability: ${acceptProb.toFixed(4)}, random value: ${randomVal.toFixed(4)}, accept: ${accept}`);
-                
-                if (accept) {
-                    this.currentLikelihood = newLikelihood;
-                    if (newLikelihood < this.bestLikelihood) {
-                        this.bestLikelihood = newLikelihood;
-                        this.noImprovementCount = 0;
-                        console.log(`*** NEW BEST LIKELIHOOD: ${this.bestLikelihood.toFixed(6)} ***`);
-                    } else {
-                        this.noImprovementCount++;
-                    }
-                    console.log("CHANGE ACCEPTED");
-                } else {
-                    // Reject change - restore original probabilities
-                    individual.probabilities = originalProbs;
-                    this.pedigreeChart.updateAllProbabilities();
-                    this.noImprovementCount++;
-                    console.log("CHANGE REJECTED - probabilities restored");
-                }
-                
-                this.iterations++;
-                
-                // Adaptive cooling: only cool down if we're making progress
-                // If no improvement for a while, maintain higher temperature for exploration
-                if (this.noImprovementCount < 100) {
-                    // Making progress - cool down normally
-                    this.temperature *= this.coolingRate;
-                } else if (this.noImprovementCount < 500) {
-                    // Slow progress - cool down more slowly
-                    this.temperature *= 0.9995;
-                } else {
-                    // No progress - maintain temperature for exploration
-                    // Only very slight cooling to prevent complete stagnation
-                    this.temperature *= 0.9999;
-                }
-                
-                // Update display
-                document.getElementById('iterationCount').textContent = this.iterations;
-                document.getElementById('likelihood').textContent = this.currentLikelihood.toFixed(3);
-                
-                // Check stopping criteria every 1000 iterations
-                if (this.iterations % 1000 === 0) {
-                    console.log(`=== CHECKPOINT AT ${this.iterations} ITERATIONS ===`);
-                    console.log(`No improvement count: ${this.noImprovementCount}`);
-                    if (this.noImprovementCount > 5000) {
-                        this.stop();
-                        document.getElementById('optStatus').textContent = 'Converged';
-                        console.log("OPTIMIZATION CONVERGED");
-                        return;
-                    }
-                }
-                
-                this.pedigreeChart.draw();
-            }
-            
-            /** Continue stepping while running. */
-            step() {
-                // Check if we should stop FIRST
-                if (!this.running) {
-                    console.log("Step called but running=false, exiting");
-                    return;
-                }
-                
-                this.performSingleStep();
-                
-                // Only continue if still running (in case stop was called during step)
-                if (this.running) {
-                    this.timeoutId = setTimeout(() => this.step(), 1);
-                } else {
-                    console.log("Running set to false during step, not scheduling next step");
-                }
-            }
-            
-            /** Reset probabilities to their original values. */
-            reset() {
-                // Stop any running optimization first
-                this.stop();
-                
-                for (let individual of this.pedigreeChart.individuals) {
-                    if (!individual.frozen) {
-                        individual.probabilities = [...individual.originalProbabilities];
-                    }
-                }
-                this.pedigreeChart.updateAllProbabilities();
-                this.pedigreeChart.draw();
-                
-                this.iterations = 0;
-                this.currentLikelihood = this.pedigreeChart.calculateNegativeLogLikelihood();
-                
-                document.getElementById('iterationCount').textContent = '0';
-                document.getElementById('likelihood').textContent = this.currentLikelihood.toFixed(3);
-                document.getElementById('optStatus').textContent = 'Reset';
-                
-                console.log("=== OPTIMIZATION RESET ===");
-                console.log(`Reset to negative log-likelihood: ${this.currentLikelihood}`);
+class Optimizer {
+    constructor(pedigreeChart) {
+        this.chart = pedigreeChart;
+        this.base = new BaseOptimizer(pedigreeChart);
+        this.running = false;
+        this.timeoutId = null;
+    }
+
+    start() {
+        this.running = true;
+        this.base.initialize();
+        document.getElementById('startOptBtn').disabled = true;
+        document.getElementById('stepOptBtn').disabled = true;
+        document.getElementById('stopOptBtn').disabled = false;
+        document.getElementById('optStatus').textContent = 'Running';
+        this.updateDisplay();
+        this.step();
+    }
+
+    stepOnce() {
+        if (this.running) return;
+        if (this.base.iterations === 0) {
+            this.base.initialize();
+            this.updateDisplay();
+        }
+        this.performSingleStep();
+    }
+
+    stop() {
+        this.running = false;
+        if (this.timeoutId) {
+            clearTimeout(this.timeoutId);
+            this.timeoutId = null;
+        }
+        document.getElementById('startOptBtn').disabled = false;
+        document.getElementById('stepOptBtn').disabled = false;
+        document.getElementById('stopOptBtn').disabled = true;
+        document.getElementById('optStatus').textContent = 'Stopped';
+    }
+
+    performSingleStep() {
+        if (!this.base.performSingleStep()) {
+            this.stop();
+            document.getElementById('optStatus').textContent = 'Converged';
+            return;
+        }
+        this.updateDisplay();
+        this.chart.draw();
+    }
+
+    step() {
+        if (!this.running) return;
+        this.performSingleStep();
+        if (this.running) {
+            this.timeoutId = setTimeout(() => this.step(), 1);
+        }
+    }
+
+    reset() {
+        this.stop();
+        for (const ind of this.chart.individuals) {
+            if (!ind.frozen) {
+                ind.probabilities = [...ind.originalProbabilities];
             }
         }
+        this.chart.updateAllProbabilities();
+        this.chart.draw();
+        this.base.initialize();
+        this.updateDisplay();
+        document.getElementById('optStatus').textContent = 'Reset';
+    }
+
+    updateDisplay() {
+        document.getElementById('iterationCount').textContent = this.base.iterations;
+        document.getElementById('likelihood').textContent = this.base.currentLikelihood.toFixed(3);
+    }
+}
         
         // Initialize application
         let pedigreeChart;
