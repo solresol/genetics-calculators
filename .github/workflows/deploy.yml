@@ -1,0 +1,27 @@
+name: Deploy
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
+      - name: Deploy
+        run: |
+          scp -o StrictHostKeyChecking=no dist/pedigree_analyzer.html numbertarget@merah.cassia.ifost.org.au:/var/www/vhosts/genes.arithmetic.guru/htdocs/index.html
