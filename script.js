@@ -524,6 +524,28 @@ class Individual extends BaseIndividual {
                         individual.updateFromPopulationFrequency();
                     }
                 }
+                this.checkDataCompleteness();
+            }
+
+            checkDataCompleteness() {
+                let msg = '';
+                for (const child of this.individuals) {
+                    if (child.parents.length === 1) {
+                        msg = `Missing second parent for ${child.id}`;
+                        break;
+                    }
+                }
+                if (!msg) {
+                    for (const ind of this.individuals) {
+                        if (ind.parents.length === 0 && !ind.race) {
+                            msg = `Missing racial ancestry information for ${ind.id}`;
+                            break;
+                        }
+                    }
+                }
+                document.getElementById('startOptBtn').disabled = !!msg;
+                document.getElementById('stepOptBtn').disabled = !!msg;
+                document.getElementById('dataErrors').textContent = msg;
             }
             
             /**
@@ -597,6 +619,7 @@ class Individual extends BaseIndividual {
                 this.updateAllProbabilities();
                 this.draw();
                 this.updateIndividualInfo();
+                this.checkDataCompleteness();
             }
             
             /**
@@ -681,22 +704,53 @@ class Individual extends BaseIndividual {
             draw() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 
-                // Draw relations first
+                // Draw partner links
                 this.ctx.strokeStyle = '#666';
                 this.ctx.lineWidth = 2;
-                
+                const partnerMid = new Map();
                 for (let relation of this.relations) {
-                    if (relation.type === 'parent') {
-                        this.ctx.beginPath();
-                        this.ctx.moveTo(relation.parent.x, relation.parent.y);
-                        this.ctx.lineTo(relation.child.x, relation.child.y);
-                        this.ctx.stroke();
-                    } else if (relation.type === 'partner') {
+                    if (relation.type === 'partner') {
                         const [ind1, ind2] = relation.individuals;
+                        const midY = ind1.y;
                         this.ctx.beginPath();
-                        this.ctx.moveTo(ind1.x, ind1.y);
-                        this.ctx.lineTo(ind2.x, ind2.y);
+                        this.ctx.moveTo(ind1.x, midY - 3);
+                        this.ctx.lineTo(ind2.x, midY - 3);
+                        this.ctx.moveTo(ind1.x, midY + 3);
+                        this.ctx.lineTo(ind2.x, midY + 3);
                         this.ctx.stroke();
+                        partnerMid.set(`${ind1.id}-${ind2.id}`, {x:(ind1.x+ind2.x)/2, y:midY});
+                        partnerMid.set(`${ind2.id}-${ind1.id}`, {x:(ind1.x+ind2.x)/2, y:midY});
+                    }
+                }
+
+                // Draw parent-child links
+                for (let child of this.individuals) {
+                    if (child.parents.length === 2) {
+                        const [p1, p2] = child.parents;
+                        const mid = partnerMid.get(`${p1.id}-${p2.id}`) || {x:(p1.x+p2.x)/2,y:p1.y};
+                        const ll = this.getChildNegLogLikelihood(child);
+                        const ratio = Math.min(ll / 3, 1);
+                        const r = Math.round(144*(1-ratio));
+                        const g = Math.round(238*(1-ratio));
+                        const b = Math.round(144*(1-ratio) + 139*ratio);
+                        this.ctx.strokeStyle = `rgb(${r},${g},${b})`;
+                        this.ctx.lineWidth = 1 + 4*ratio;
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(mid.x, mid.y);
+                        this.ctx.lineTo(child.x, child.y);
+                        this.ctx.stroke();
+                        this.ctx.fillStyle = '#000';
+                        this.ctx.font = '10px Arial';
+                        this.ctx.fillText(ll.toFixed(2), (mid.x + child.x)/2, (mid.y + child.y)/2 - 4);
+                    } else {
+                        for (let parent of child.parents) {
+                            this.ctx.strokeStyle = '#666';
+                            this.ctx.lineWidth = 1;
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(parent.x, parent.y);
+                            this.ctx.lineTo(child.x, child.y);
+                            this.ctx.stroke();
+                        }
                     }
                 }
                 
@@ -784,6 +838,18 @@ class Individual extends BaseIndividual {
                 this.ctx.fillText(`${probs[2]} ${probs[3]}`, x, y - 22);
                 
                 this.ctx.setLineDash([]);
+            }
+
+            getChildNegLogLikelihood(child) {
+                if (child.hypothetical) return 0;
+                let prob;
+                if (child.affected) {
+                    prob = child.probabilities[3];
+                } else {
+                    prob = child.probabilities[0] + child.probabilities[1] + child.probabilities[2];
+                }
+                prob = prob > 0 ? prob : 1e-10;
+                return -Math.log(prob);
             }
             
             /**
