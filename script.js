@@ -823,162 +823,55 @@ class Individual extends BaseIndividual {
                 return -logLikelihood;
             }
         }
-        
-        // Population frequency data
-        const populationFrequencies = {
-            'cf': {
-                'european_ancestry': 0.029,
-                'african_american': 0.0067,
-                'general': 0.025,
-                'custom1': 0.0,
-                'custom2': 0.0
-            },
-            'sma': {
-                'european_ancestry': 0.017,
-                'african_american': 0.019,
-                'general': 0.018,
-                'custom1': 0.0,
-                'custom2': 0.0
-            },
-            'tay': {
-                'european_ancestry': 0.0034,
-                'african_american': 0.0013,
-                'general': 0.002,
-                'custom1': 0.0,
-                'custom2': 0.0
-            },
-            'pku': {
-                'european_ancestry': 0.02,
-                'african_american': 0.005,
-                'general': 0.015,
-                'custom1': 0.0,
-                'custom2': 0.0
-            },
-            'hemo': {
-                'european_ancestry': 0.11,
-                'african_american': 0.014,
-                'general': 0.08,
-                'custom1': 0.0,
-                'custom2': 0.0
-            }
-        };
-        
-        /**
-         * Look up the carrier frequency for a race and current condition.
-         * @param {string} race
-         * @returns {number|null}
-         */
+
+
+        // Lookup carrier frequency for the selected condition
         function getCarrierFrequency(race) {
             const condition = document.getElementById('conditionSelect').value;
             return populationFrequencies[condition][race] || null;
         }
-        
-        /**
-         * Render the editable table of carrier frequencies.
-         */
+
+        // Render editable carrier frequency table
         function updateFrequencyTable() {
             const condition = document.getElementById('conditionSelect').value;
             const tbody = document.getElementById('frequencyTableBody');
-            
+
             tbody.innerHTML = '';
-            
+
             const populations = ['european_ancestry', 'african_american', 'general', 'custom1', 'custom2'];
             const populationNames = {
-                'european_ancestry': 'European Ancestry',
-                'african_american': 'African American',
-                'general': 'General Population',
-                'custom1': 'Custom 1',
-                'custom2': 'Custom 2'
+                european_ancestry: 'European Ancestry',
+                african_american: 'African American',
+                general: 'General Population',
+                custom1: 'Custom 1',
+                custom2: 'Custom 2'
             };
-            
+
             for (let pop of populations) {
                 const row = tbody.insertRow();
                 const nameCell = row.insertCell();
                 const freqCell = row.insertCell();
-                
+
                 nameCell.textContent = populationNames[pop];
-                
+
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.step = '0.001';
                 input.min = '0';
                 input.max = '1';
                 input.value = populationFrequencies[condition][pop];
-                
+
                 input.addEventListener('change', (e) => {
                     populationFrequencies[condition][pop] = parseFloat(e.target.value) || 0;
                     pedigreeChart.updateAllProbabilities();
                     pedigreeChart.draw();
                 });
-                
+
                 freqCell.appendChild(input);
             }
         }
 
-        /**
-         * Automatically layout individuals based on parent-child levels.
-         * @param {PedigreeChart} chart
-         */
-        function autoLayout(chart, options = {}) {
-            const xSpacing = options.xSpacing || 120;
-            const ySpacing = options.ySpacing || 100;
 
-            const levelMap = new Map();
-            const queue = [];
-
-            for (const ind of chart.individuals) {
-                if (ind.parents.length === 0) {
-                    levelMap.set(ind, 0);
-                    queue.push(ind);
-                }
-            }
-
-            while (queue.length) {
-                const ind = queue.shift();
-                const level = levelMap.get(ind);
-                for (const child of ind.children) {
-                    const childLevel = level + 1;
-                    if (!levelMap.has(child) || childLevel > levelMap.get(child)) {
-                        levelMap.set(child, childLevel);
-                        queue.push(child);
-                    }
-                }
-            }
-
-            const groups = new Map();
-            for (const [ind, lvl] of levelMap.entries()) {
-                if (!groups.has(lvl)) groups.set(lvl, []);
-                groups.get(lvl).push(ind);
-            }
-
-            const levels = Array.from(groups.keys()).sort((a, b) => a - b);
-            for (const lvl of levels) {
-                const inds = groups.get(lvl);
-                inds.sort((a, b) => a.id - b.id);
-
-                const ordered = [];
-                const used = new Set();
-                for (const ind of inds) {
-                    if (used.has(ind)) continue;
-                    if (ind.partner && inds.includes(ind.partner)) {
-                        ordered.push(ind, ind.partner);
-                        used.add(ind);
-                        used.add(ind.partner);
-                    } else {
-                        ordered.push(ind);
-                        used.add(ind);
-                    }
-                }
-
-                let x = xSpacing;
-                for (const ind of ordered) {
-                    ind.x = x;
-                    ind.y = lvl * ySpacing + ySpacing;
-                    x += xSpacing;
-                }
-            }
-        }
-        
         // Optimization algorithm
         /**
          * Simple simulated annealing optimizer for genotype probabilities.

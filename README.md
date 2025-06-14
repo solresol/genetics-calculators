@@ -59,6 +59,17 @@ npm install
 NODE_OPTIONS=--experimental-vm-modules npm test
 ```
 
+### Building the browser bundle
+
+Bundle the module code for `pedigree_analyzer.html` so it can be opened
+directly from the filesystem:
+
+```bash
+npm run build
+```
+
+This writes `dist/bundle.js` which the HTML page includes.
+
 ## Command Line Usage
 
 Run the optimiser on a pedigree defined in a JSON file:
