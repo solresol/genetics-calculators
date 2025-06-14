@@ -1,13 +1,13 @@
 {
   "condition": "cf",
   "individuals": [
-    {"id": 1, "gender": "M", "race": "general"},
-    {"id": 2, "gender": "F", "race": "general"},
-    {"id": 3, "gender": "M", "parents": [1, 2]},
-    {"id": 4, "gender": "F", "parents": [1, 2]},
-    {"id": 5, "gender": "F", "race": "general"},
+    {"id": 1, "gender": "M", "race": "general", "is_sexual_partner_of": [2]},
+    {"id": 2, "gender": "F", "race": "general", "is_sexual_partner_of": [1]},
+    {"id": 3, "gender": "M", "parents": [1, 2], "is_sexual_partner_of": [5]},
+    {"id": 4, "gender": "F", "parents": [1, 2], "is_sexual_partner_of": [7]},
+    {"id": 5, "gender": "F", "race": "general", "is_sexual_partner_of": [3]},
     {"id": 6, "gender": "M", "parents": [3, 5], "affected": true},
-    {"id": 7, "gender": "M", "race": "general"},
+    {"id": 7, "gender": "M", "race": "general", "is_sexual_partner_of": [4]},
     {"id": 8, "gender": "F", "parents": [4, 7], "hypothetical": true}
   ]
 }

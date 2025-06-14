@@ -7,8 +7,8 @@ test('parse and write coordinates', () => {
     const obj = {
         condition: 'cf',
         individuals: [
-            { id: 1, gender: 'M', x: 10, y: 20 },
-            { id: 2, gender: 'F' }
+            { id: 1, gender: 'M', x: 10, y: 20, is_sexual_partner_of: [2] },
+            { id: 2, gender: 'F', is_sexual_partner_of: [1] }
         ]
     };
     const ped = parsePedigreeObject(obj);
@@ -18,6 +18,8 @@ test('parse and write coordinates', () => {
     const out = pedigreeToObject(ped, true);
     expect(out.individuals[0].x).toBe(10);
     expect(out.individuals[0].y).toBe(20);
+    expect(out.individuals[0].is_sexual_partner_of).toEqual([2]);
+    expect(out.individuals[1].is_sexual_partner_of).toEqual([1]);
 });
 
 /** Basic check that autoLayout assigns generation based y */
