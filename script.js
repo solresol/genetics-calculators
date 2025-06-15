@@ -521,7 +521,13 @@ class Individual extends BaseIndividual {
                     if (individual.parents.length === 2) {
                         individual.calculateFromParents();
                     } else if (individual.parents.length === 0) {
-                        individual.updateFromPopulationFrequency();
+                        // Only refresh from population data if the user hasn't
+                        // manually modified this founder's probabilities
+                        const same = individual.probabilities.every((p, i) =>
+                            Math.abs(p - individual.originalProbabilities[i]) < 1e-9);
+                        if (same) {
+                            individual.updateFromPopulationFrequency();
+                        }
                     }
                 }
                 this.checkDataCompleteness();
@@ -711,15 +717,20 @@ class Individual extends BaseIndividual {
                 for (let relation of this.relations) {
                     if (relation.type === 'partner') {
                         const [ind1, ind2] = relation.individuals;
-                        const midY = ind1.y;
+                        const dx = ind2.x - ind1.x;
+                        const dy = ind2.y - ind1.y;
+                        const len = Math.hypot(dx, dy) || 1;
+                        // perpendicular unit vector for offset
+                        const ox = (-dy / len) * 3;
+                        const oy = (dx / len) * 3;
                         this.ctx.beginPath();
-                        this.ctx.moveTo(ind1.x, midY - 3);
-                        this.ctx.lineTo(ind2.x, midY - 3);
-                        this.ctx.moveTo(ind1.x, midY + 3);
-                        this.ctx.lineTo(ind2.x, midY + 3);
+                        this.ctx.moveTo(ind1.x - ox, ind1.y - oy);
+                        this.ctx.lineTo(ind2.x - ox, ind2.y - oy);
+                        this.ctx.moveTo(ind1.x + ox, ind1.y + oy);
+                        this.ctx.lineTo(ind2.x + ox, ind2.y + oy);
                         this.ctx.stroke();
-                        partnerMid.set(`${ind1.id}-${ind2.id}`, {x:(ind1.x+ind2.x)/2, y:midY});
-                        partnerMid.set(`${ind2.id}-${ind1.id}`, {x:(ind1.x+ind2.x)/2, y:midY});
+                        partnerMid.set(`${ind1.id}-${ind2.id}`, {x:(ind1.x+ind2.x)/2, y:(ind1.y+ind2.y)/2});
+                        partnerMid.set(`${ind2.id}-${ind1.id}`, {x:(ind1.x+ind2.x)/2, y:(ind1.y+ind2.y)/2});
                     }
                 }
 
