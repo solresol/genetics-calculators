@@ -71,11 +71,8 @@ The "Add Child" button allows creating children for selected parent pairs:
 5. Hypothetical children are visually distinguished (dashed borders) and excluded from likelihood calculations
 
 ### Optimization Engine
-Uses simulated annealing with several improvements:
-- **Increased step size**: `changeAmount = 0.05` (increased from 0.01) for more meaningful probability changes
-- **Adaptive cooling**: Temperature reduction adapts based on progress:
-  - Fast progress (< 100 iterations without improvement): Normal cooling rate (0.995)
-  - Slow progress (100-500 iterations): Slower cooling (0.9995)  
-  - No progress (> 500 iterations): Minimal cooling (0.9999) to maintain exploration
+Uses simulated annealing with a simple cooling schedule:
+- **Learning rate**: `changeAmount = 0.0001` for small probability adjustments
+- **Constant cooling**: Temperature decreases by the fixed `coolingRate` every step
 - **Proper likelihood calculation**: Hypothetical children excluded from optimization target
 - Both accepted and rejected moves increment no-improvement counter for better convergence detection

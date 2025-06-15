@@ -629,7 +629,7 @@ class Individual extends BaseIndividual {
                 const info = document.getElementById('individualInfo');
                 if (this.selectedIndividual) {
                     const ind = this.selectedIndividual;
-                    const probs = ind.probabilities.map(p => p.toFixed(3)).join(', ');
+                    const probs = ind.probabilities.map(p => p.toFixed(4)).join(', ');
                     
                     info.innerHTML = `
                         <strong>Individual ${ind.id} (${ind.gender === 'M' ? 'Male' : 'Female'})</strong><br>
@@ -655,10 +655,10 @@ class Individual extends BaseIndividual {
                         <div style="font-size: 12px;">
                             <strong>Genotype Probabilities:</strong><br>
                             <div style="font-family: monospace; background: #f8f9fa; padding: 5px; border-radius: 3px;">
-                                neg-neg: ${ind.probabilities[0].toFixed(3)}<br>
-                                neg-pos: ${ind.probabilities[1].toFixed(3)}<br>
-                                pos-neg: ${ind.probabilities[2].toFixed(3)}<br>
-                                pos-pos: ${ind.probabilities[3].toFixed(3)}
+                                neg-neg: ${ind.probabilities[0].toFixed(4)}<br>
+                                neg-pos: ${ind.probabilities[1].toFixed(4)}<br>
+                                pos-neg: ${ind.probabilities[2].toFixed(4)}<br>
+                                pos-pos: ${ind.probabilities[3].toFixed(4)}
                             </div>
                         </div>
                         ${ind.parents.length > 0 ? `<div style="margin-top: 10px; font-size: 12px; color: #666;">Parents: ${ind.parents.map(p => p.id).join(', ')}</div>` : ''}
@@ -833,7 +833,7 @@ class Individual extends BaseIndividual {
                 
                 // Draw probabilities
                 this.ctx.font = '8px Arial';
-                const probs = individual.probabilities.map(p => p.toFixed(2));
+                const probs = individual.probabilities.map(p => p.toFixed(4));
                 this.ctx.fillText(`${probs[0]} ${probs[1]}`, x, y - 30);
                 this.ctx.fillText(`${probs[2]} ${probs[3]}`, x, y - 22);
                 
