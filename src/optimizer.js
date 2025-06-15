@@ -7,6 +7,7 @@ export class Optimizer {
         this.noImprovementCount = 0;
         this.temperature = 1.0;
         this.coolingRate = 0.995;
+        this.learningRate = 0.0001;
     }
 
     initialize() {
@@ -26,7 +27,7 @@ export class Optimizer {
         }
         const individual = unaffected[Math.floor(Math.random() * unaffected.length)];
         const originalProbs = [...individual.probabilities];
-        const changeAmount = 0.05;
+        const changeAmount = this.learningRate;
         if (Math.random() < 0.5) {
             const change = (Math.random() - 0.5) * changeAmount;
             individual.probabilities[0] = Math.max(0, Math.min(1, individual.probabilities[0] + change));
@@ -76,17 +77,8 @@ export class Optimizer {
         }
         this.iterations++;
         
-        // Adaptive cooling: only cool down if we're making progress
-        if (this.noImprovementCount < 100) {
-            // Making progress - cool down normally
-            this.temperature *= this.coolingRate;
-        } else if (this.noImprovementCount < 500) {
-            // Slow progress - cool down more slowly
-            this.temperature *= 0.9995;
-        } else {
-            // No progress - maintain temperature for exploration
-            this.temperature *= 0.9999;
-        }
+        // Constant cooling with fixed rate
+        this.temperature *= this.coolingRate;
         return true;
     }
 
