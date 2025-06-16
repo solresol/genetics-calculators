@@ -34,6 +34,10 @@ export class Pedigree {
             throw new Error('Child cannot have more than two parents');
         }
         this.relations.push({ type: 'parent', parent, child });
+        if (child.parents.length === 2) {
+            const [p1, p2] = child.parents;
+            this.addPartnership(p1, p2);
+        }
     }
 
     addPartnership(ind1, ind2) {

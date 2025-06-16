@@ -12,7 +12,10 @@ test('pedigree analyzer page loads', async () => {
 
   const options = new firefox.Options();
   options.addArguments('-headless');
-  const service = new firefox.ServiceBuilder('/usr/local/bin/geckodriver');
+  const geckodriverPath = process.env.GECKOWEBDRIVER
+    ? path.join(process.env.GECKOWEBDRIVER, 'geckodriver')
+    : '/usr/local/bin/geckodriver';
+  const service = new firefox.ServiceBuilder(geckodriverPath);
   const driver = await new Builder()
     .forBrowser('firefox')
     .setFirefoxOptions(options)
