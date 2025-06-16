@@ -478,6 +478,10 @@ class Individual extends BaseIndividual {
                     return;
                 }
                 this.relations.push({type: 'parent', parent: parent, child: child});
+                if (child.parents.length === 2) {
+                    const [p1, p2] = child.parents;
+                    this.addPartnership(p1, p2);
+                }
             }
             
             /**
@@ -1144,6 +1148,8 @@ class Optimizer {
             const canvas = document.getElementById('pedigreeCanvas');
             pedigreeChart = new PedigreeChart(canvas);
             optimizer = new Optimizer(pedigreeChart);
+            window.pedigreeChart = pedigreeChart;
+            window.optimizer = optimizer;
 
             // Set up event listeners
             document.getElementById('conditionSelect').addEventListener('change', updateFrequencyTable);
