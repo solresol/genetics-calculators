@@ -551,6 +551,7 @@ class Individual extends BaseIndividual {
                 }
                 document.getElementById('startOptBtn').disabled = !!msg;
                 document.getElementById('stepOptBtn').disabled = !!msg;
+                document.getElementById('stepNodeBtn').disabled = !!msg;
                 document.getElementById('dataErrors').textContent = msg;
             }
             
@@ -621,7 +622,11 @@ class Individual extends BaseIndividual {
 
                 this.nextId = maxId + 1;
 
-                autoLayout(this);
+                const hasCoords = obj.individuals.every(info =>
+                    typeof info.x === 'number' && typeof info.y === 'number');
+                if (!hasCoords) {
+                    autoLayout(this);
+                }
                 this.updateAllProbabilities();
                 this.draw();
                 this.updateIndividualInfo();
@@ -1086,6 +1091,17 @@ class Optimizer {
         this.performSingleStep();
     }
 
+    stepNode(individual) {
+        if (this.running || !individual) return;
+        if (this.base.iterations === 0) {
+            this.base.initialize();
+            this.updateDisplay();
+        }
+        this.base.performStepOnIndividual(individual);
+        this.updateDisplay();
+        this.chart.draw();
+    }
+
     stop() {
         this.running = false;
         if (this.timeoutId) {
@@ -1144,11 +1160,14 @@ class Optimizer {
             const canvas = document.getElementById('pedigreeCanvas');
             pedigreeChart = new PedigreeChart(canvas);
             optimizer = new Optimizer(pedigreeChart);
+            window.pedigreeChart = pedigreeChart;
+            window.optimizer = optimizer;
 
             // Set up event listeners
             document.getElementById('conditionSelect').addEventListener('change', updateFrequencyTable);
             document.getElementById('startOptBtn').addEventListener('click', () => optimizer.start());
             document.getElementById('stepOptBtn').addEventListener('click', () => optimizer.stepOnce());
+            document.getElementById('stepNodeBtn').addEventListener('click', () => optimizer.stepNode(pedigreeChart.selectedIndividual));
             document.getElementById('stopOptBtn').addEventListener('click', () => optimizer.stop());
             document.getElementById('resetBtn').addEventListener('click', () => optimizer.reset());
             document.getElementById('loadFileBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());

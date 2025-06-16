@@ -26,6 +26,13 @@ export class Optimizer {
             return false;
         }
         const individual = unaffected[Math.floor(Math.random() * unaffected.length)];
+        return this.performStepOnIndividual(individual);
+    }
+
+    performStepOnIndividual(individual) {
+        if (!individual || individual.affected || individual.frozen) {
+            return false;
+        }
         const originalProbs = [...individual.probabilities];
         const changeAmount = this.learningRate;
         if (Math.random() < 0.5) {
@@ -76,7 +83,7 @@ export class Optimizer {
             this.noImprovementCount++;
         }
         this.iterations++;
-        
+
         // Constant cooling with fixed rate
         this.temperature *= this.coolingRate;
         return true;
