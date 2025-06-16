@@ -1073,11 +1073,13 @@ class Optimizer {
         this.base = new BaseOptimizer(pedigreeChart);
         this.running = false;
         this.timeoutId = null;
+        this.probabilityDelta = 0;
     }
 
     start() {
         this.running = true;
         this.base.initialize();
+        this.probabilityDelta = 0;
         document.getElementById('startOptBtn').disabled = true;
         document.getElementById('stepOptBtn').disabled = true;
         document.getElementById('stopOptBtn').disabled = false;
@@ -1090,6 +1092,7 @@ class Optimizer {
         if (this.running) return;
         if (this.base.iterations === 0) {
             this.base.initialize();
+            this.probabilityDelta = 0;
             this.updateDisplay();
         }
         this.performSingleStep();
@@ -1099,9 +1102,12 @@ class Optimizer {
         if (this.running || !individual) return;
         if (this.base.iterations === 0) {
             this.base.initialize();
+            this.probabilityDelta = 0;
             this.updateDisplay();
         }
-        this.base.performStepOnIndividual(individual);
+        const delta = this.base.performStepOnIndividual(individual);
+        if (delta === null) return;
+        this.probabilityDelta = delta;
         this.updateDisplay();
         this.chart.draw();
     }
@@ -1119,11 +1125,14 @@ class Optimizer {
     }
 
     performSingleStep() {
-        if (!this.base.performSingleStep()) {
+        const before = this.base.currentLikelihood;
+        const delta = this.base.performSingleStep();
+        if (delta === null) {
             this.stop();
             document.getElementById('optStatus').textContent = 'Converged';
             return;
         }
+        this.probabilityDelta = delta;
         this.updateDisplay();
         this.chart.draw();
     }
@@ -1146,6 +1155,7 @@ class Optimizer {
         this.chart.updateAllProbabilities();
         this.chart.draw();
         this.base.initialize();
+        this.probabilityDelta = 0;
         this.updateDisplay();
         document.getElementById('optStatus').textContent = 'Reset';
     }
@@ -1153,6 +1163,7 @@ class Optimizer {
     updateDisplay() {
         document.getElementById('iterationCount').textContent = this.base.iterations;
         document.getElementById('likelihood').textContent = this.base.currentLikelihood.toFixed(3);
+        document.getElementById('probDelta').textContent = this.probabilityDelta.toFixed(6);
     }
 }
         
