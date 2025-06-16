@@ -636,6 +636,48 @@ class Individual extends BaseIndividual {
                 this.updateIndividualInfo();
                 this.checkDataCompleteness();
             }
+
+            /**
+             * Convert the current chart to an object compatible with the CLI
+             * JSON format.
+             * @param {boolean} includeCoords - include x/y coordinates
+             */
+            toObject(includeCoords = false) {
+                const partnerMap = new Map();
+                for (const rel of this.relations) {
+                    if (rel.type === 'partner') {
+                        const [a, b] = rel.individuals;
+                        if (!partnerMap.has(a.id)) partnerMap.set(a.id, new Set());
+                        if (!partnerMap.has(b.id)) partnerMap.set(b.id, new Set());
+                        partnerMap.get(a.id).add(b.id);
+                        partnerMap.get(b.id).add(a.id);
+                    }
+                }
+                const individuals = this.individuals.map(ind => {
+                    const obj = { id: ind.id, gender: ind.gender };
+                    if (ind.parents.length === 2) {
+                        obj.parents = [ind.parents[0].id, ind.parents[1].id];
+                    } else if (ind.parents.length === 1) {
+                        obj.parents = [ind.parents[0].id];
+                    }
+                    const partners = partnerMap.get(ind.id);
+                    if (partners && partners.size > 0) {
+                        obj.is_sexual_partner_of = Array.from(partners);
+                    }
+                    if (ind.race) obj.race = ind.race;
+                    if (ind.affected) obj.affected = true;
+                    if (ind.hypothetical) obj.hypothetical = true;
+                    if (includeCoords) {
+                        obj.x = ind.x;
+                        obj.y = ind.y;
+                    }
+                    return obj;
+                });
+                return {
+                    condition: document.getElementById('conditionSelect').value,
+                    individuals
+                };
+            }
             
             /**
              * Refresh the info panel with details of the selected individual.
@@ -1188,6 +1230,19 @@ class Optimizer {
                     }
                 };
                 reader.readAsText(file);
+            });
+
+            document.getElementById('saveFileBtn').addEventListener('click', () => {
+                const obj = pedigreeChart.toObject(true);
+                const json = JSON.stringify(obj, null, 2);
+                window.lastSavedData = json;
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'pedigree.json';
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 0);
             });
 
             // Initialize frequency table
