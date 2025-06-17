@@ -1173,23 +1173,31 @@ class Optimizer {
         document.getElementById('optStatus').textContent = 'Stopped';
     }
 
-    performSingleStep() {
+    performSingleStep(update = true) {
         const before = this.base.currentLikelihood;
         const delta = this.base.performSingleStep();
         if (delta === null) {
             this.stop();
             document.getElementById('optStatus').textContent = 'Converged';
+            this.updateDisplay();
+            this.chart.draw();
             return;
         }
         this.probabilityDelta = delta;
-        this.updateDisplay();
-        this.chart.draw();
+        if (update) {
+            this.updateDisplay();
+            this.chart.draw();
+        }
     }
 
     step() {
         if (!this.running) return;
-        this.performSingleStep();
+        this.performSingleStep(false);
         if (this.running) {
+            if (this.base.iterations % 100 === 0) {
+                this.updateDisplay();
+                this.chart.draw();
+            }
             this.timeoutId = setTimeout(() => this.step(), 1);
         }
     }
