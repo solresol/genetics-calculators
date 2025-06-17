@@ -190,12 +190,15 @@ class Individual extends BaseIndividual {
                 const instructions = {
                     'select': 'Click individuals to select/move them, or drag to move',
                     'addMale': 'Click empty space to add a male (square)',
-                    'addFemale': 'Click empty space to add a female (circle)', 
+                    'addFemale': 'Click empty space to add a female (circle)',
                     'addRelation': 'Click two individuals to create parent-child or partnership',
                     'addChild': 'Click two individuals who will be parents of a new child'
                 };
-                
-                // You could add this to the UI if you want instructions displayed
+
+                const status = document.getElementById('statusMessage');
+                if (status) {
+                    status.textContent = instructions[this.mode] || '';
+                }
             }
             
             /**
@@ -311,6 +314,10 @@ class Individual extends BaseIndividual {
              */
             showStatus(message) {
                 console.log(message);
+                const status = document.getElementById('statusMessage');
+                if (status) {
+                    status.textContent = message;
+                }
             }
             
             /**
