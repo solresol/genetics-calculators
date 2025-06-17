@@ -30,12 +30,13 @@ test('optimizer works with small learning rate', () => {
     // Perform 50 optimization steps
     let stepsPerformed = 0;
     for (let i = 0; i < 50; i++) {
-        if (optimizer.performSingleStep()) {
+        const delta = optimizer.performSingleStep();
+        if (delta !== null) {
             stepsPerformed++;
         }
     }
-    
-    // Should have performed steps
+
+    // Should have attempted steps
     expect(stepsPerformed).toBeGreaterThan(0);
     
     // Should have completed some iterations
@@ -53,8 +54,9 @@ test('temperature always cools by fixed rate', () => {
     const initialTemp = optimizer.temperature;
 
     const stepped = optimizer.performSingleStep();
-    expect(stepped).toBe(true);
+    expect(stepped).not.toBeNull();
 
     const expectedTemp = initialTemp * optimizer.coolingRate;
     expect(optimizer.temperature).toBeCloseTo(expectedTemp, 6);
 });
+

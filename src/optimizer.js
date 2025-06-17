@@ -23,7 +23,7 @@ export class Optimizer {
             (ind) => !ind.affected && !ind.frozen && ind.parents.length === 0
         );
         if (unaffected.length === 0) {
-            return false;
+            return null;
         }
         const individual = unaffected[Math.floor(Math.random() * unaffected.length)];
         return this.performStepOnIndividual(individual);
@@ -31,7 +31,7 @@ export class Optimizer {
 
     performStepOnIndividual(individual) {
         if (!individual || individual.affected || individual.frozen) {
-            return false;
+            return null;
         }
         const originalProbs = [...individual.probabilities];
         const changeAmount = this.learningRate;
@@ -69,8 +69,13 @@ export class Optimizer {
         const deltaE = newLikelihood - this.currentLikelihood;
         const acceptProb = deltaE < 0 ? 1.0 : Math.exp(-deltaE / this.temperature);
         const accept = Math.random() < acceptProb;
+        let delta = 0;
         if (accept) {
             this.currentLikelihood = newLikelihood;
+            delta = originalProbs.reduce(
+                (sum, p, idx) => sum + Math.abs(individual.probabilities[idx] - p),
+                0
+            );
             if (newLikelihood < this.bestLikelihood) {
                 this.bestLikelihood = newLikelihood;
                 this.noImprovementCount = 0;
@@ -86,13 +91,13 @@ export class Optimizer {
 
         // Constant cooling with fixed rate
         this.temperature *= this.coolingRate;
-        return true;
+        return delta;
     }
 
     run(maxIterations = 10000) {
         this.initialize();
         for (let i = 0; i < maxIterations; i++) {
-            if (!this.performSingleStep()) break;
+            if (this.performSingleStep() === null) break;
             if (this.noImprovementCount > 5000) break;
         }
         return this.bestLikelihood;
