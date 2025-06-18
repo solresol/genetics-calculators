@@ -19,5 +19,8 @@
   "jest": {
     "testEnvironment": "node",
     "transform": {}
+  },
+  "dependencies": {
+    "optimization-js": "^1.5.0"
   }
 }

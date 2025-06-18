@@ -1,3 +1,5 @@
+import { optimizeAllFoundersPowell } from './optimjs.js';
+
 export class Optimizer {
     constructor(pedigree) {
         this.pedigree = pedigree;
@@ -19,14 +21,34 @@ export class Optimizer {
     }
 
     performSingleStep() {
-        const unaffected = this.pedigree.individuals.filter(
+        const founders = this.pedigree.individuals.filter(
             (ind) => !ind.affected && !ind.frozen && ind.parents.length === 0
         );
-        if (unaffected.length === 0) {
+        if (founders.length === 0) {
             return null;
         }
-        const individual = unaffected[Math.floor(Math.random() * unaffected.length)];
-        return this.performStepOnIndividual(individual);
+
+        const baseline = founders.map(f => [...f.probabilities]);
+        const newLikelihood = optimizeAllFoundersPowell(this.pedigree);
+
+        let delta = 0;
+        for (let i = 0; i < founders.length; i++) {
+            for (let j = 0; j < founders[i].probabilities.length; j++) {
+                delta += Math.abs(founders[i].probabilities[j] - baseline[i][j]);
+            }
+        }
+
+        this.currentLikelihood = newLikelihood;
+        if (newLikelihood < this.bestLikelihood) {
+            this.bestLikelihood = newLikelihood;
+            this.noImprovementCount = 0;
+        } else {
+            this.noImprovementCount++;
+        }
+
+        this.iterations++;
+        this.temperature *= this.coolingRate;
+        return delta;
     }
 
     performStepOnIndividual(individual) {
