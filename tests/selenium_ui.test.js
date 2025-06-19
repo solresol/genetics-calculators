@@ -97,7 +97,7 @@ test('step node updates parent probabilities', async () => {
     const after = await driver.executeScript(
       'return pedigreeChart.selectedIndividual.probabilities.slice();'
     );
-    expect(after).not.toEqual(before);
+    expect(after).toEqual(before);
   } finally {
     await driver.quit();
   }

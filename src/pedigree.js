@@ -49,6 +49,26 @@ export class Pedigree {
         this.relations.push({ type: 'partner', individuals: [ind1, ind2] });
     }
 
+    freezeUninformativeFounders() {
+        const informative = new Set();
+        const queue = this.individuals.filter(ind => !ind.hypothetical);
+        while (queue.length > 0) {
+            const ind = queue.pop();
+            for (const parent of ind.parents) {
+                if (!informative.has(parent)) {
+                    informative.add(parent);
+                    queue.push(parent);
+                }
+            }
+        }
+        if (informative.size === 0) return;
+        for (const ind of this.individuals) {
+            if (ind.parents.length === 0 && !informative.has(ind)) {
+                ind.frozen = true;
+            }
+        }
+    }
+
     updateAllProbabilities() {
         for (const individual of this.individuals) {
             if (individual.parents.length === 2) {
