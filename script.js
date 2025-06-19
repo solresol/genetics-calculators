@@ -522,6 +522,26 @@ class Individual extends BaseIndividual {
                     this.needsRaceInput.add(individual);
                 }
             }
+
+            freezeUninformativeFounders() {
+                const informative = new Set();
+                const queue = this.individuals.filter(ind => !ind.hypothetical);
+                while (queue.length > 0) {
+                    const ind = queue.pop();
+                    for (const parent of ind.parents) {
+                        if (!informative.has(parent)) {
+                            informative.add(parent);
+                            queue.push(parent);
+                        }
+                    }
+                }
+                if (informative.size === 0) return;
+                for (const ind of this.individuals) {
+                    if (ind.parents.length === 0 && !informative.has(ind)) {
+                        ind.frozen = true;
+                    }
+                }
+            }
             
             /**
              * Recalculate probabilities for every individual.
@@ -541,6 +561,39 @@ class Individual extends BaseIndividual {
                         }
                     }
                 }
+
+                for (const child of this.individuals) {
+                    if (child.affected && child.parents.length === 2) {
+                        const [p1, p2] = child.parents;
+                        for (const parent of [p1, p2]) {
+                            if (!parent.affected) {
+                                parent.probabilities = [0, 0.5, 0.5, 0];
+                                parent.validateAndNormalizeProbabilities();
+                                parent.originalProbabilities = [...parent.probabilities];
+                            }
+                        }
+                    }
+                }
+
+                for (let individual of this.individuals) {
+                    if (individual.parents.length === 2) {
+                        individual.calculateFromParents();
+                    }
+                }
+
+                for (const child of this.individuals) {
+                    if (child.affected && child.parents.length === 2) {
+                        const [p1, p2] = child.parents;
+                        const siblings = p1.children.filter(c => p2.children.includes(c) && c !== child);
+                        for (const sib of siblings) {
+                            if (!sib.affected) {
+                                sib.calculateFromParents();
+                                sib.originalProbabilities = [...sib.probabilities];
+                            }
+                        }
+                    }
+                }
+
                 this.checkDataCompleteness();
             }
 
@@ -1127,6 +1180,9 @@ class Optimizer {
 
     start() {
         this.running = true;
+        if (typeof this.chart.freezeUninformativeFounders === 'function') {
+            this.chart.freezeUninformativeFounders();
+        }
         this.base.initialize();
         this.probabilityDelta = 0;
         document.getElementById('startOptBtn').disabled = true;
@@ -1140,6 +1196,9 @@ class Optimizer {
     stepOnce() {
         if (this.running) return;
         if (this.base.iterations === 0) {
+            if (typeof this.chart.freezeUninformativeFounders === 'function') {
+                this.chart.freezeUninformativeFounders();
+            }
             this.base.initialize();
             this.probabilityDelta = 0;
             this.updateDisplay();
@@ -1150,6 +1209,9 @@ class Optimizer {
     stepNode(individual) {
         if (this.running || !individual) return;
         if (this.base.iterations === 0) {
+            if (typeof this.chart.freezeUninformativeFounders === 'function') {
+                this.chart.freezeUninformativeFounders();
+            }
             this.base.initialize();
             this.probabilityDelta = 0;
             this.updateDisplay();

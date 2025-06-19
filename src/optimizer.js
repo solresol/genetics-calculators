@@ -13,6 +13,9 @@ export class Optimizer {
     }
 
     initialize() {
+        if (typeof this.pedigree.freezeUninformativeFounders === 'function') {
+            this.pedigree.freezeUninformativeFounders();
+        }
         this.iterations = 0;
         this.currentLikelihood = this.pedigree.calculateNegativeLogLikelihood();
         this.bestLikelihood = this.currentLikelihood;
