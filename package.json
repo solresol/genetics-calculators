@@ -4,7 +4,8 @@
   "type": "module",
   "bin": {
     "pedigree-opt": "./cli.js",
-    "pedigree-layout": "./layout-cli.js"
+    "pedigree-layout": "./layout-cli.js",
+    "prob-fraction": "./fraction-cli.js"
   },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
