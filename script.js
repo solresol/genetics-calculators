@@ -1,5 +1,6 @@
 import { Individual as BaseIndividual } from './src/individual.js';
 import { Optimizer as BaseOptimizer } from './src/optimizer.js';
+import { probabilityToFraction } from './src/probability_fraction.js';
 
 class Individual extends BaseIndividual {
     constructor(x, y, gender, id) {
@@ -956,8 +957,20 @@ class Individual extends BaseIndividual {
                 // Draw probabilities
                 this.ctx.font = '8px Arial';
                 const probs = individual.probabilities.map(p => p.toFixed(4));
-                this.ctx.fillText(`${probs[0]} ${probs[1]}`, x, y - 30);
-                this.ctx.fillText(`${probs[2]} ${probs[3]}`, x, y - 22);
+
+                const non = individual.probabilities[0];
+                const carrier = individual.probabilities[1] + individual.probabilities[2];
+                const aff = individual.probabilities[3];
+                const nonFrac = probabilityToFraction(non);
+                const carrierFrac = probabilityToFraction(carrier);
+                const affFrac = probabilityToFraction(aff);
+
+                this.ctx.fillText(`Non carrier: ${nonFrac.numerator}/${nonFrac.denominator}`, x, y - 46);
+                this.ctx.fillText(`Carrier: ${carrierFrac.numerator}/${carrierFrac.denominator}`, x, y - 38);
+                this.ctx.fillText(`Affected: ${affFrac.numerator}/${affFrac.denominator}`, x, y - 30);
+
+                this.ctx.fillText(`${probs[0]} ${probs[1]}`, x, y - 22);
+                this.ctx.fillText(`${probs[2]} ${probs[3]}`, x, y - 14);
                 
                 this.ctx.setLineDash([]);
             }
