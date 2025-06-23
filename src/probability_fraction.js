@@ -31,6 +31,11 @@ export function probabilityToFraction(prob) {
         x = 1 / remainder;
         term = Math.floor(x);
         if (term > 10) {
+            const sig = terms[0] === 0 ? terms.slice(1) : terms;
+            if (prob !== 1 && sig.length === 1 && sig[0] === 1) {
+                terms.push(term);
+                break;
+            }
             break;
         }
         terms.push(term);

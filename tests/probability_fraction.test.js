@@ -7,6 +7,7 @@ test('probabilityToFraction produces simple ratios', () => {
     expect(probabilityToFraction(0.5)).toEqual({ numerator: 1, denominator: 2 });
     expect(probabilityToFraction(0.50001)).toEqual({ numerator: 1, denominator: 2 });
     expect(probabilityToFraction(0.24999)).toEqual({ numerator: 1, denominator: 4 });
+    expect(probabilityToFraction(0.025)).toEqual({ numerator: 1, denominator: 40 });
     expect(probabilityToFraction(0.66)).toEqual({ numerator: 2, denominator: 3 });
 });
 
