@@ -34,7 +34,7 @@ test('autoLayout assigns coordinates', () => {
 
     autoLayout(ped, { xSpacing: 50, ySpacing: 40 });
 
-    expect(f.y).toBe(0);
-    expect(m.y).toBe(0);
-    expect(c.y).toBe(40);
+    expect(f.y).toBe(20);
+    expect(m.y).toBe(20);
+    expect(c.y).toBe(60);
 });

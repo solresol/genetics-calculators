@@ -690,7 +690,7 @@ class Individual extends BaseIndividual {
                 const hasCoords = obj.individuals.every(info =>
                     typeof info.x === 'number' && typeof info.y === 'number');
                 if (!hasCoords) {
-                    autoLayout(this);
+                    autoLayout(this, { canvasHeight: this.canvas.height });
                 }
                 this.updateAllProbabilities();
                 this.draw();
@@ -1121,6 +1121,7 @@ class Individual extends BaseIndividual {
         function autoLayout(chart, options = {}) {
             const xSpacing = options.xSpacing || 120;
             const ySpacing = options.ySpacing || 100;
+            const canvasHeight = typeof options.canvasHeight === 'number' ? options.canvasHeight : chart.canvas.height;
 
             const levelMap = new Map();
             const queue = [];
@@ -1150,6 +1151,29 @@ class Individual extends BaseIndividual {
                 groups.get(lvl).push(ind);
             }
 
+            const depthMap = new Map();
+            for (const ind of chart.individuals) {
+                if (ind.children.length === 0) {
+                    depthMap.set(ind, 1);
+                }
+            }
+
+            while (depthMap.size < chart.individuals.length) {
+                let changed = false;
+                for (const ind of chart.individuals) {
+                    if (depthMap.has(ind)) continue;
+                    if (ind.children.every(c => depthMap.has(c))) {
+                        const d = Math.max(...ind.children.map(c => depthMap.get(c))) + 1;
+                        depthMap.set(ind, d);
+                        changed = true;
+                    }
+                }
+                if (!changed) break;
+            }
+
+            const Y = Math.max(...depthMap.values());
+            const spacing = canvasHeight / (Y + 1);
+
             const levels = Array.from(groups.keys()).sort((a, b) => a - b);
             for (const lvl of levels) {
                 const inds = groups.get(lvl);
@@ -1172,7 +1196,8 @@ class Individual extends BaseIndividual {
                 let x = xSpacing;
                 for (const ind of ordered) {
                     ind.x = x;
-                    ind.y = lvl * ySpacing + ySpacing;
+                    const d = depthMap.get(ind) || 1;
+                    ind.y = ((Y - d) + 0.5) * spacing;
                     x += xSpacing;
                 }
             }
