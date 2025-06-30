@@ -96,6 +96,7 @@ calculation but their genotype probabilities are computed from their
 parents. The program prints a table of updated genotype probabilities
 for each individual, including any hypothetical children.
 Sample pedigrees that demonstrate these features can be found in the `scenarios` directory.
+The web UI includes a **Load Example** drop‑down that loads these sample files without needing to upload them.
 
 ### JSON Pedigree Format
 
