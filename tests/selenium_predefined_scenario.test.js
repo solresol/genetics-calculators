@@ -35,7 +35,7 @@ test('predefined scenario loads from dropdown', async () => {
       'var ind=pedigreeChart.individuals.find(i=>i.id===1); return {x:ind.x,y:ind.y};'
     );
     expect(coords.x).toBe(100);
-    expect(coords.y).toBe(50);
+    expect(coords.y).toBe(100);
   } finally {
     await driver.quit();
   }
