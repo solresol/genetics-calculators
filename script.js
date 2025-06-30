@@ -1,6 +1,7 @@
 import { Individual as BaseIndividual } from './src/individual.js';
 import { Optimizer as BaseOptimizer } from './src/optimizer.js';
 import { probabilityToFraction } from './src/probability_fraction.js';
+import { predefinedScenarios } from './predefined_scenarios.js';
 
 class Individual extends BaseIndividual {
     constructor(x, y, gender, id) {
@@ -1356,6 +1357,21 @@ class Optimizer {
                     }
                 };
                 reader.readAsText(file);
+            });
+
+            const scenarioSelect = document.getElementById('scenarioSelect');
+            for (const name of Object.keys(predefinedScenarios)) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                scenarioSelect.appendChild(opt);
+            }
+
+            document.getElementById('loadScenarioBtn').addEventListener('click', () => {
+                const name = scenarioSelect.value;
+                if (name && predefinedScenarios[name]) {
+                    pedigreeChart.loadFromObject(predefinedScenarios[name]);
+                }
             });
 
             document.getElementById('saveFileBtn').addEventListener('click', () => {
