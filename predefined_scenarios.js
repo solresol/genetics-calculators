@@ -2,14 +2,14 @@ export const predefinedScenarios = {
   "Hypothetical Child with Afflicted Cousin": {
     "condition": "cf",
     "individuals": [
-      {"id": 1, "gender": "M", "race": "general", "is_sexual_partner_of": [2]},
-      {"id": 2, "gender": "F", "race": "general", "is_sexual_partner_of": [1]},
-      {"id": 3, "gender": "M", "parents": [1, 2], "is_sexual_partner_of": [5]},
-      {"id": 4, "gender": "F", "parents": [1, 2], "is_sexual_partner_of": [7]},
-      {"id": 5, "gender": "F", "race": "general", "is_sexual_partner_of": [3]},
-      {"id": 6, "gender": "M", "parents": [3, 5], "affected": true},
-      {"id": 7, "gender": "M", "race": "general", "is_sexual_partner_of": [4]},
-      {"id": 8, "gender": "F", "parents": [4, 7], "hypothetical": true}
+      {"id": 1, "gender": "M", "race": "general", "is_sexual_partner_of": [2], "x": 0, "y": 50},
+      {"id": 2, "gender": "F", "race": "general", "is_sexual_partner_of": [1], "x": 120, "y": 50},
+      {"id": 3, "gender": "M", "parents": [1, 2], "is_sexual_partner_of": [5], "x": 0, "y": 150},
+      {"id": 4, "gender": "F", "parents": [1, 2], "is_sexual_partner_of": [7], "x": 240, "y": 150},
+      {"id": 5, "gender": "F", "race": "general", "is_sexual_partner_of": [3], "x": 120, "y": 150},
+      {"id": 6, "gender": "M", "parents": [3, 5], "affected": true, "x": 0, "y": 250},
+      {"id": 7, "gender": "M", "race": "general", "is_sexual_partner_of": [4], "x": 360, "y": 150},
+      {"id": 8, "gender": "F", "parents": [4, 7], "hypothetical": true, "x": 120, "y": 250}
     ]
   },
   "Hypothetical Child with Afflicted Sibling": {
