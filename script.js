@@ -239,8 +239,8 @@ class Individual extends BaseIndividual {
                 this.dragTarget.y = y - this.dragOffset.y;
                 
                 // Keep within canvas bounds
-                this.dragTarget.x = Math.max(25, Math.min(this.canvas.width - 25, this.dragTarget.x));
-                this.dragTarget.y = Math.max(25, Math.min(this.canvas.height - 25, this.dragTarget.y));
+                this.dragTarget.x = Math.max(35, Math.min(this.canvas.width - 35, this.dragTarget.x));
+                this.dragTarget.y = Math.max(35, Math.min(this.canvas.height - 35, this.dragTarget.y));
                 
                 this.draw();
             }
@@ -450,7 +450,7 @@ class Individual extends BaseIndividual {
             findIndividualAt(x, y) {
                 for (let individual of this.individuals) {
                     const distance = Math.sqrt((x - individual.x) ** 2 + (y - individual.y) ** 2);
-                    if (distance <= 20) {
+                    if (distance <= 30) {
                         return individual;
                     }
                 }
@@ -888,7 +888,7 @@ class Individual extends BaseIndividual {
                     this.ctx.strokeStyle = '#ff0000';
                     this.ctx.lineWidth = 3;
                     this.ctx.beginPath();
-                    this.ctx.arc(this.pendingRelation.x, this.pendingRelation.y, 25, 0, 2 * Math.PI);
+                    this.ctx.arc(this.pendingRelation.x, this.pendingRelation.y, 35, 0, 2 * Math.PI);
                     this.ctx.stroke();
                 }
             }
@@ -900,7 +900,7 @@ class Individual extends BaseIndividual {
             drawIndividual(individual) {
                 const x = individual.x;
                 const y = individual.y;
-                const size = 20;
+                const size = 30;
                 
                 // Determine colors
                 let fillColor = individual.affected ? '#ff4444' : '#fff';
@@ -953,7 +953,7 @@ class Individual extends BaseIndividual {
                 this.ctx.fillStyle = '#000';
                 this.ctx.font = '12px Arial';
                 this.ctx.textAlign = 'center';
-                this.ctx.fillText(individual.id.toString(), x, y + (individual.affected ? 40 : 35));
+                this.ctx.fillText(individual.id.toString(), x, y + (individual.affected ? 50 : 45));
                 
                 // Draw probabilities
                 this.ctx.font = '8px Arial';
