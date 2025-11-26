@@ -1,0 +1,15 @@
+{
+  "condition": "hemo",
+  "individuals": [
+    {"id": 1, "gender": "M", "race": "european_ancestry", "is_sexual_partner_of": [2], "x": 150, "y": 50},
+    {"id": 2, "gender": "F", "race": "european_ancestry", "is_sexual_partner_of": [1], "x": 300, "y": 50},
+    {"id": 3, "gender": "M", "parents": [1, 2], "is_sexual_partner_of": [5], "x": 100, "y": 250},
+    {"id": 4, "gender": "F", "parents": [1, 2], "is_sexual_partner_of": [6], "x": 350, "y": 250},
+    {"id": 5, "gender": "F", "race": "european_ancestry", "is_sexual_partner_of": [3], "x": 225, "y": 250},
+    {"id": 6, "gender": "M", "race": "general", "is_sexual_partner_of": [4], "x": 475, "y": 250},
+    {"id": 7, "gender": "M", "parents": [3, 5], "x": 100, "y": 450},
+    {"id": 8, "gender": "F", "parents": [3, 5], "affected": true, "x": 200, "y": 450},
+    {"id": 9, "gender": "M", "parents": [4, 6], "x": 350, "y": 450},
+    {"id": 10, "gender": "F", "parents": [4, 6], "hypothetical": true, "x": 450, "y": 450}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "condition": "sma",
+  "individuals": [
+    {"id": 1, "gender": "M", "race": "african_american", "is_sexual_partner_of": [2], "x": 100, "y": 50},
+    {"id": 2, "gender": "F", "race": "african_american", "is_sexual_partner_of": [1], "x": 200, "y": 50},
+    {"id": 3, "gender": "M", "parents": [1, 2], "affected": true, "x": 150, "y": 250},
+    {"id": 4, "gender": "F", "parents": [1, 2], "hypothetical": true, "x": 250, "y": 250}
+  ]
+}
