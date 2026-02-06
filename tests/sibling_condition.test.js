@@ -1,6 +1,6 @@
 import { Pedigree } from '../src/pedigree.js';
 
-test('siblings of an affected child have 25% chance of the condition', () => {
+test('real unaffected siblings of an affected child are conditioned to 2/3 carrier risk', () => {
     const pedigree = new Pedigree('cf');
     const father = pedigree.addIndividual('M');
     const mother = pedigree.addIndividual('F');
@@ -17,6 +17,8 @@ test('siblings of an affected child have 25% chance of the condition', () => {
 
     pedigree.updateAllProbabilities();
 
-    expect(sibling.probabilities[3]).toBeCloseTo(0.25);
-    expect(sibling.probabilities[0]).toBeCloseTo(0.25);
+    expect(sibling.probabilities[0]).toBeCloseTo(1 / 3, 6);
+    expect(sibling.probabilities[1]).toBeCloseTo(1 / 3, 6);
+    expect(sibling.probabilities[2]).toBeCloseTo(1 / 3, 6);
+    expect(sibling.probabilities[3]).toBeCloseTo(0, 6);
 });

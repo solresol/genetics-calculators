@@ -70,6 +70,8 @@ export class Pedigree {
     }
 
     updateAllProbabilities() {
+        const obligateCarriers = new Set();
+
         for (const individual of this.individuals) {
             if (individual.parents.length === 2) {
                 individual.calculateFromParents();
@@ -81,6 +83,7 @@ export class Pedigree {
                 const [parent1, parent2] = child.parents;
                 for (const parent of [parent1, parent2]) {
                     if (!parent.affected) {
+                        obligateCarriers.add(parent);
                         parent.probabilities = [0, 0.5, 0.5, 0];
                         parent.validateAndNormalizeProbabilities();
                         parent.originalProbabilities = [...parent.probabilities];
@@ -90,7 +93,9 @@ export class Pedigree {
         }
 
         for (const individual of this.individuals) {
-            if (individual.parents.length === 2) {
+            // Keep obligate carriers fixed; otherwise they get overwritten
+            // by a forward pass from their own parents in multi-generation pedigrees.
+            if (individual.parents.length === 2 && !obligateCarriers.has(individual)) {
                 individual.calculateFromParents();
             }
         }
@@ -103,12 +108,14 @@ export class Pedigree {
                 );
                 for (const sib of siblings) {
                     if (!sib.affected) {
-                        // Recompute the sibling probabilities from the
-                        // now-obligate carrier parents rather than assuming
-                        // a fixed distribution. This correctly yields a
-                        // 25% chance of being affected for hypothetical
-                        // children.
+                        // Recompute sibling probabilities from obligate-carrier parents.
+                        // Real siblings are known unaffected, so condition out +/+.
+                        // Hypothetical siblings keep full recurrence risk.
                         sib.calculateFromParents();
+                        if (!sib.hypothetical) {
+                            sib.probabilities[3] = 0;
+                            sib.validateAndNormalizeProbabilities();
+                        }
                         sib.originalProbabilities = [...sib.probabilities];
                     }
                 }

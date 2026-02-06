@@ -44,7 +44,7 @@ export function optimizeFounderPowell(pedigree, individual) {
         }
     }
     pedigree.updateAllProbabilities();
-    return result.fncvalue;
+    return pedigree.calculateNegativeLogLikelihood();
 }
 
 /**
@@ -104,5 +104,5 @@ export function optimizeAllFoundersPowell(pedigree) {
         }
     }
     pedigree.updateAllProbabilities();
-    return result.fncvalue;
+    return pedigree.calculateNegativeLogLikelihood();
 }

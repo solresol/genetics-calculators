@@ -549,6 +549,8 @@ class Individual extends BaseIndividual {
              * Recalculate probabilities for every individual.
              */
             updateAllProbabilities() {
+                const obligateCarriers = new Set();
+
                 // Update probabilities for all individuals based on their parents
                 for (let individual of this.individuals) {
                     if (individual.parents.length === 2) {
@@ -569,6 +571,7 @@ class Individual extends BaseIndividual {
                         const [p1, p2] = child.parents;
                         for (const parent of [p1, p2]) {
                             if (!parent.affected) {
+                                obligateCarriers.add(parent);
                                 parent.probabilities = [0, 0.5, 0.5, 0];
                                 parent.validateAndNormalizeProbabilities();
                                 parent.originalProbabilities = [...parent.probabilities];
@@ -578,7 +581,7 @@ class Individual extends BaseIndividual {
                 }
 
                 for (let individual of this.individuals) {
-                    if (individual.parents.length === 2) {
+                    if (individual.parents.length === 2 && !obligateCarriers.has(individual)) {
                         individual.calculateFromParents();
                     }
                 }
@@ -590,6 +593,10 @@ class Individual extends BaseIndividual {
                         for (const sib of siblings) {
                             if (!sib.affected) {
                                 sib.calculateFromParents();
+                                if (!sib.hypothetical) {
+                                    sib.probabilities[3] = 0;
+                                    sib.validateAndNormalizeProbabilities();
+                                }
                                 sib.originalProbabilities = [...sib.probabilities];
                             }
                         }

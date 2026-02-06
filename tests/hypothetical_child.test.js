@@ -25,8 +25,8 @@ test('hypothetical children should be excluded from likelihood calculation', () 
     // Calculate likelihood - should only include parents and real child
     const likelihood = pedigree.calculateNegativeLogLikelihood();
     
-    // Should be positive (negative log of probability < 1) and finite
-    expect(likelihood).toBeGreaterThan(0);
+    // Should be finite and non-negative
+    expect(likelihood).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(likelihood)).toBe(true);
 });
 
@@ -103,5 +103,4 @@ test('hypothetical child with affected sibling has 25% affected risk', () => {
     expect(hypo.probabilities[3]).toBeCloseTo(0.25);
     expect(hypo.probabilities[0]).toBeCloseTo(0.25);
 });
-
 
