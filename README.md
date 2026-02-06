@@ -337,18 +337,37 @@ Tests run on:
 
 ### Test Issues
 
-**Problem**: Selenium tests fail with "geckodriver not found"
+**Problem**: Selenium tests fail with "geckodriver not found" or "Server terminated early with status 64"
 
 **Solution**:
 ```bash
-# macOS
+# Verify geckodriver supports Selenium's required flag
+geckodriver --help | grep websocket-port
+
+# If missing or too old, install/upgrade geckodriver
+
+# macOS (MacPorts)
+sudo port install geckodriver
+
+# macOS (Homebrew)
 brew install geckodriver
 
-# Linux
+# Linux (Debian/Ubuntu)
 sudo apt-get install firefox-geckodriver
 
 # Set custom path if needed
+# GECKOWEBDRIVER expects a directory containing geckodriver
 export GECKOWEBDRIVER=/path/to/geckodriver/directory
+
+# GECKODRIVER can point directly to the binary
+export GECKODRIVER=/full/path/to/geckodriver
+```
+
+If `port` reports:
+`Current platform "darwin 25" does not match expected platform "darwin 24"`
+run:
+```bash
+sudo /opt/local/bin/port migrate
 ```
 
 **Problem**: Playwright tests fail on first run

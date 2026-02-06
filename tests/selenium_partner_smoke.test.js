@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
-import { Builder, By, until } from 'selenium-webdriver';
-import firefox from 'selenium-webdriver/firefox.js';
+import { By, until } from 'selenium-webdriver';
 import { spawnSync } from 'child_process';
 import path from 'path';
+import { buildHeadlessFirefoxDriver } from './selenium_driver.js';
 
 jest.setTimeout(30000);
 
@@ -10,17 +10,7 @@ test('partner link added when child has two parents', async () => {
   const build = spawnSync('node', ['build.js']);
   expect(build.status).toBe(0);
 
-  const options = new firefox.Options();
-  options.addArguments('-headless');
-  const geckodriverPath = process.env.GECKOWEBDRIVER
-    ? path.join(process.env.GECKOWEBDRIVER, 'geckodriver')
-    : '/usr/local/bin/geckodriver';
-  const service = new firefox.ServiceBuilder(geckodriverPath);
-  const driver = await new Builder()
-    .forBrowser('firefox')
-    .setFirefoxOptions(options)
-    .setFirefoxService(service)
-    .build();
+  const driver = await buildHeadlessFirefoxDriver();
 
   try {
     const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
