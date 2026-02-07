@@ -1222,6 +1222,44 @@ class Optimizer {
         this.running = false;
         this.timeoutId = null;
         this.probabilityDelta = 0;
+        this.likelihoodDelta = 0;
+        this.recentProbabilityDeltas = [];
+        this.recentLikelihoods = [];
+        this.convergenceWindow = 100;
+        this.convergenceProbabilityTolerance = 1e-5;
+        this.convergenceLikelihoodTolerance = 1e-5;
+    }
+
+    resetConvergenceTracking() {
+        this.probabilityDelta = 0;
+        this.likelihoodDelta = 0;
+        this.recentProbabilityDeltas = [];
+        this.recentLikelihoods = [];
+    }
+
+    recordConvergenceSample(probabilityDelta, likelihood) {
+        this.recentProbabilityDeltas.push(Math.abs(probabilityDelta));
+        this.recentLikelihoods.push(likelihood);
+        if (this.recentProbabilityDeltas.length > this.convergenceWindow) {
+            this.recentProbabilityDeltas.shift();
+        }
+        if (this.recentLikelihoods.length > this.convergenceWindow) {
+            this.recentLikelihoods.shift();
+        }
+    }
+
+    hasConverged() {
+        if (this.recentProbabilityDeltas.length < this.convergenceWindow) {
+            return false;
+        }
+        const maxProbabilityDelta = Math.max(...this.recentProbabilityDeltas);
+        const maxLikelihood = Math.max(...this.recentLikelihoods);
+        const minLikelihood = Math.min(...this.recentLikelihoods);
+        const likelihoodRange = maxLikelihood - minLikelihood;
+        return (
+            maxProbabilityDelta <= this.convergenceProbabilityTolerance &&
+            likelihoodRange <= this.convergenceLikelihoodTolerance
+        );
     }
 
     start() {
@@ -1230,7 +1268,7 @@ class Optimizer {
             this.chart.freezeUninformativeFounders();
         }
         this.base.initialize();
-        this.probabilityDelta = 0;
+        this.resetConvergenceTracking();
         document.getElementById('startOptBtn').disabled = true;
         document.getElementById('stepOptBtn').disabled = true;
         document.getElementById('stopOptBtn').disabled = false;
@@ -1246,7 +1284,7 @@ class Optimizer {
                 this.chart.freezeUninformativeFounders();
             }
             this.base.initialize();
-            this.probabilityDelta = 0;
+            this.resetConvergenceTracking();
             this.updateDisplay();
         }
         this.performSingleStep();
@@ -1259,7 +1297,7 @@ class Optimizer {
                 this.chart.freezeUninformativeFounders();
             }
             this.base.initialize();
-            this.probabilityDelta = 0;
+            this.resetConvergenceTracking();
             this.updateDisplay();
         }
         const delta = this.base.performStepOnIndividual(individual);
@@ -1291,7 +1329,18 @@ class Optimizer {
             this.chart.draw();
             return;
         }
-        this.probabilityDelta = delta;
+        this.probabilityDelta = Math.abs(delta);
+        this.likelihoodDelta = Math.abs(this.base.currentLikelihood - before);
+        this.recordConvergenceSample(this.probabilityDelta, this.base.currentLikelihood);
+        if (this.hasConverged()) {
+            if (this.running) {
+                this.stop();
+            }
+            document.getElementById('optStatus').textContent = 'Converged';
+            this.updateDisplay();
+            this.chart.draw();
+            return;
+        }
         if (update) {
             this.updateDisplay();
             this.chart.draw();
@@ -1320,7 +1369,7 @@ class Optimizer {
         this.chart.updateAllProbabilities();
         this.chart.draw();
         this.base.initialize();
-        this.probabilityDelta = 0;
+        this.resetConvergenceTracking();
         this.updateDisplay();
         document.getElementById('optStatus').textContent = 'Reset';
     }

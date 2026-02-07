@@ -47,24 +47,12 @@ test('afflicted cousin scenario stabilizes during continuous optimization', asyn
 
     await driver.findElement(By.id('startOptBtn')).click();
     await driver.wait(async () => {
-      const stability = await driver.executeScript(`
-        const trace = window.__optTrace || [];
-        if (trace.length < 120) return null;
-        const recent = trace.slice(-100);
-        const recentLikelihoods = recent.map(t => t.likelihood);
-        const recentDeltas = recent.map(t => t.delta);
-        return {
-          range: Math.max(...recentLikelihoods) - Math.min(...recentLikelihoods),
-          deltaMax: Math.max(...recentDeltas)
-        };
-      `);
-      return !!stability && stability.range < 0.01 && stability.deltaMax < 0.01;
-    }, OPTIMIZATION_TIMEOUT_MS);
-    await driver.findElement(By.id('stopOptBtn')).click();
-    await driver.wait(async () => {
       const running = await driver.executeScript('return !!window.optimizer && window.optimizer.running;');
       return running === false;
-    }, 5000);
+    }, OPTIMIZATION_TIMEOUT_MS);
+
+    const statusText = await driver.findElement(By.id('optStatus')).getText();
+    expect(statusText).toBe('Converged');
 
     const stats = await driver.executeScript(`
       const trace = window.__optTrace || [];
