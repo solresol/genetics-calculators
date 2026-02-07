@@ -1,25 +1,31 @@
 import { jest } from '@jest/globals';
 import { By } from 'selenium-webdriver';
-import { spawnSync } from 'child_process';
 import path from 'path';
 import { buildHeadlessFirefoxDriver } from './selenium_driver.js';
+import {
+  ensureBundleBuilt,
+  getDistFileUrl,
+  SELENIUM_TIMEOUT_MS,
+  waitForIndividuals
+} from './selenium_test_utils.js';
 
-jest.setTimeout(30000);
+jest.setTimeout(SELENIUM_TIMEOUT_MS);
+
+beforeAll(() => {
+  ensureBundleBuilt();
+});
 
 test('step node updates genotype table', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
 
     const fileInput = await driver.findElement(By.id('loadFileInput'));
     const scenarioPath = path.resolve('scenarios/hypothetical_child_with_afflicted_sibling.json');
     await fileInput.sendKeys(scenarioPath);
-    await driver.sleep(500);
+    await waitForIndividuals(driver, 4);
 
     await driver.findElement(By.id('selectBtn')).click();
     await driver.executeScript(

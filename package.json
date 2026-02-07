@@ -9,6 +9,9 @@
   },
   "scripts": {
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:unit": "node --experimental-vm-modules node_modules/.bin/jest --testPathIgnorePatterns=/node_modules/ --testPathIgnorePatterns=/tests-playwright/ --testPathIgnorePatterns=/tests/selenium_",
+    "test:selenium": "node --experimental-vm-modules node_modules/.bin/jest tests/selenium_ --runInBand",
+    "test:ci": "npm run test:unit && npm run test:selenium",
     "build": "node build.js",
     "sanity": "node scripts/sanity_check.js"
   },

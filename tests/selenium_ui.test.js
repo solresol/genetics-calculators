@@ -1,19 +1,25 @@
 import { jest } from '@jest/globals';
 import { By } from 'selenium-webdriver';
-import { spawnSync } from 'child_process';
 import path from 'path';
 import { buildHeadlessFirefoxDriver } from './selenium_driver.js';
+import {
+  ensureBundleBuilt,
+  getDistFileUrl,
+  SELENIUM_TIMEOUT_MS,
+  waitForIndividuals
+} from './selenium_test_utils.js';
 
-jest.setTimeout(30000);
+jest.setTimeout(SELENIUM_TIMEOUT_MS);
+
+beforeAll(() => {
+  ensureBundleBuilt();
+});
 
 test('pedigree analyzer page loads', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
     const heading = await driver.findElement(By.css('h1')).getText();
     expect(heading).toBe('Genetic Pedigree Probability Analyzer');
@@ -23,18 +29,15 @@ test('pedigree analyzer page loads', async () => {
 });
 
 test('scenario coordinates respected', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
     const fileInput = await driver.findElement(By.id('loadFileInput'));
     const scenarioPath = path.resolve('scenarios/hypothetical_child_with_afflicted_sibling.json');
     await fileInput.sendKeys(scenarioPath);
-    await driver.sleep(500);
+    await waitForIndividuals(driver, 4);
     const coords = await driver.executeScript(
       'var ind=pedigreeChart.individuals.find(i=>i.id===1); return {x:ind.x,y:ind.y};'
     );
@@ -46,18 +49,15 @@ test('scenario coordinates respected', async () => {
 });
 
 test('step node updates parent probabilities', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
     const fileInput = await driver.findElement(By.id('loadFileInput'));
     const scenarioPath = path.resolve('scenarios/hypothetical_child_with_afflicted_sibling.json');
     await fileInput.sendKeys(scenarioPath);
-    await driver.sleep(500);
+    await waitForIndividuals(driver, 4);
 
     await driver.executeScript(
       'pedigreeChart.selectedIndividual = pedigreeChart.individuals.find(i => i.id === 1);'

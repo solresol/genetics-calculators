@@ -22,4 +22,5 @@ jobs:
         cache: 'npm'
     - run: npm install
     - run: echo "The GECKOWEBDRIVER environment variable is set to $GECKOWEBDRIVER"
-    - run: npm test
+    - run: npm run test:unit
+    - run: npm run test:selenium

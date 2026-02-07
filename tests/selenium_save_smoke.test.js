@@ -1,11 +1,20 @@
 import { jest } from '@jest/globals';
 import { By } from 'selenium-webdriver';
-import { spawnSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { buildHeadlessFirefoxDriver } from './selenium_driver.js';
+import {
+  ensureBundleBuilt,
+  getDistFileUrl,
+  SELENIUM_TIMEOUT_MS,
+  waitForIndividuals
+} from './selenium_test_utils.js';
 
-jest.setTimeout(30000);
+jest.setTimeout(SELENIUM_TIMEOUT_MS);
+
+beforeAll(() => {
+  ensureBundleBuilt();
+});
 
 function normalize(obj) {
   obj.individuals.sort((a,b) => a.id - b.id);
@@ -18,18 +27,15 @@ function normalize(obj) {
 }
 
 test('load then save yields same file', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
     const fileInput = await driver.findElement(By.id('loadFileInput'));
     const scenarioPath = path.resolve('scenarios/hypothetical_child_with_afflicted_sibling.json');
     await fileInput.sendKeys(scenarioPath);
-    await driver.sleep(500);
+    await waitForIndividuals(driver, 4);
 
     await driver.findElement(By.id('saveFileBtn')).click();
     await driver.wait(async () => {
@@ -47,18 +53,15 @@ test('load then save yields same file', async () => {
 });
 
 test('updated coordinates are saved', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
     const fileInput = await driver.findElement(By.id('loadFileInput'));
     const scenarioPath = path.resolve('scenarios/hypothetical_child_with_afflicted_sibling.json');
     await fileInput.sendKeys(scenarioPath);
-    await driver.sleep(500);
+    await waitForIndividuals(driver, 4);
 
     await driver.executeScript('var ind=window.pedigreeChart.individuals.find(i=>i.id===1); ind.x=300; ind.y=400; window.pedigreeChart.draw();');
     await driver.findElement(By.id('saveFileBtn')).click();

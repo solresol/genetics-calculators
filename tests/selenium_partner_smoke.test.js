@@ -1,19 +1,19 @@
 import { jest } from '@jest/globals';
 import { By, until } from 'selenium-webdriver';
-import { spawnSync } from 'child_process';
-import path from 'path';
 import { buildHeadlessFirefoxDriver } from './selenium_driver.js';
+import { ensureBundleBuilt, getDistFileUrl, SELENIUM_TIMEOUT_MS } from './selenium_test_utils.js';
 
-jest.setTimeout(30000);
+jest.setTimeout(SELENIUM_TIMEOUT_MS);
+
+beforeAll(() => {
+  ensureBundleBuilt();
+});
 
 test('partner link added when child has two parents', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
 
     const canvas = await driver.findElement(By.id('pedigreeCanvas'));

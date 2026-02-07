@@ -1,19 +1,25 @@
 import { jest } from '@jest/globals';
 import { By } from 'selenium-webdriver';
-import { spawnSync } from 'child_process';
-import path from 'path';
 import { buildHeadlessFirefoxDriver } from './selenium_driver.js';
+import {
+  ensureBundleBuilt,
+  getDistFileUrl,
+  OPTIMIZATION_TIMEOUT_MS,
+  SELENIUM_TIMEOUT_MS,
+  waitForIndividuals
+} from './selenium_test_utils.js';
 
-jest.setTimeout(45000);
+jest.setTimeout(SELENIUM_TIMEOUT_MS);
+
+beforeAll(() => {
+  ensureBundleBuilt();
+});
 
 test('afflicted cousin scenario stabilizes during continuous optimization', async () => {
-  const build = spawnSync('node', ['build.js']);
-  expect(build.status).toBe(0);
-
   const driver = await buildHeadlessFirefoxDriver();
 
   try {
-    const fileUrl = 'file://' + path.resolve('dist/pedigree_analyzer.html');
+    const fileUrl = getDistFileUrl();
     await driver.get(fileUrl);
 
     const option = await driver.findElement(
@@ -21,7 +27,7 @@ test('afflicted cousin scenario stabilizes during continuous optimization', asyn
     );
     await option.click();
     await driver.findElement(By.id('loadScenarioBtn')).click();
-    await driver.sleep(500);
+    await waitForIndividuals(driver, 6);
 
     await driver.executeScript(`
       window.__optTrace = [];
@@ -40,9 +46,25 @@ test('afflicted cousin scenario stabilizes during continuous optimization', asyn
     `);
 
     await driver.findElement(By.id('startOptBtn')).click();
-    await driver.sleep(6000);
+    await driver.wait(async () => {
+      const stability = await driver.executeScript(`
+        const trace = window.__optTrace || [];
+        if (trace.length < 120) return null;
+        const recent = trace.slice(-100);
+        const recentLikelihoods = recent.map(t => t.likelihood);
+        const recentDeltas = recent.map(t => t.delta);
+        return {
+          range: Math.max(...recentLikelihoods) - Math.min(...recentLikelihoods),
+          deltaMax: Math.max(...recentDeltas)
+        };
+      `);
+      return !!stability && stability.range < 0.01 && stability.deltaMax < 0.01;
+    }, OPTIMIZATION_TIMEOUT_MS);
     await driver.findElement(By.id('stopOptBtn')).click();
-    await driver.sleep(200);
+    await driver.wait(async () => {
+      const running = await driver.executeScript('return !!window.optimizer && window.optimizer.running;');
+      return running === false;
+    }, 5000);
 
     const stats = await driver.executeScript(`
       const trace = window.__optTrace || [];
