@@ -30,32 +30,35 @@ test('hypothetical children should be excluded from likelihood calculation', () 
     expect(Number.isFinite(likelihood)).toBe(true);
 });
 
-test('pedigree probability updates work correctly for children', () => {
+test('hypothetical child of two certain carriers has classic 25% Punnett split', () => {
     const pedigree = new Pedigree('cf');
-    
-    // Create parents with known carrier status
+
+    // Create parents that are certain carriers. The prior lives in
+    // originalProbabilities (exact inference reads its founder priors there).
     const father = pedigree.addIndividual('M');
     const mother = pedigree.addIndividual('F');
-    
-    // Set specific probabilities for parents (carriers)
-    father.probabilities = [0, 0.5, 0.5, 0]; // carrier
-    mother.probabilities = [0, 0.5, 0.5, 0]; // carrier
-    
+    father.probabilities = [0, 0.5, 0.5, 0];
+    father.originalProbabilities = [0, 0.5, 0.5, 0];
+    mother.probabilities = [0, 0.5, 0.5, 0];
+    mother.originalProbabilities = [0, 0.5, 0.5, 0];
+
     pedigree.addPartnership(father, mother);
-    
-    // Create child
+
+    // Hypothetical (unborn) child: not conditioned on its own phenotype, so it
+    // retains the full recurrence risk.
     const child = pedigree.addIndividual('M');
+    child.hypothetical = true;
     pedigree.addParentChild(father, child);
     pedigree.addParentChild(mother, child);
-    
+
     pedigree.updateAllProbabilities();
-    
-    // Child should have 25% chance of each genotype when both parents are carriers
+
+    // Child of two carriers: classic Mendelian 25% each genotype.
     expect(child.probabilities).toHaveLength(4);
-    expect(child.probabilities[0]).toBeCloseTo(0.25, 2); // neg-neg
-    expect(child.probabilities[1]).toBeCloseTo(0.25, 2); // neg-pos  
-    expect(child.probabilities[2]).toBeCloseTo(0.25, 2); // pos-neg
-    expect(child.probabilities[3]).toBeCloseTo(0.25, 2); // pos-pos (affected)
+    expect(child.probabilities[0]).toBeCloseTo(0.25, 6); // neg-neg
+    expect(child.probabilities[1]).toBeCloseTo(0.25, 6); // neg-pos
+    expect(child.probabilities[2]).toBeCloseTo(0.25, 6); // pos-neg
+    expect(child.probabilities[3]).toBeCloseTo(0.25, 6); // pos-pos (affected)
 });
 
 test('hypothetical child does not affect likelihood', () => {
@@ -78,8 +81,15 @@ test('hypothetical child does not affect likelihood', () => {
     const llWith = ped2.calculateNegativeLogLikelihood();
 
     expect(llWith).toBeCloseTo(llWithout);
-    expect(child.probabilities[0]).toBeCloseTo(0.25);
-    expect(child.probabilities[3]).toBeCloseTo(0.25);
+    // The founders are observed unaffected, so exact inference conditions them
+    // to be non-affected (they cannot be pos/pos). With the vague default
+    // founder prior each parent then transmits a disease allele with
+    // probability (2/3)*(1/2) = 1/3, so the hypothetical child's affected risk
+    // is (1/3)^2 = 1/9 and neg/neg is (2/3)^2 = 4/9. (The previous expectation
+    // of 0.25 came from the old forward model, which ignored the parents' own
+    // unaffected status and let them be pos/pos.)
+    expect(child.probabilities[0]).toBeCloseTo(4 / 9, 6);
+    expect(child.probabilities[3]).toBeCloseTo(1 / 9, 6);
 });
 
 test('hypothetical child with affected sibling has 25% affected risk', () => {

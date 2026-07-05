@@ -71,7 +71,10 @@ test('afflicted cousin scenario stabilizes during continuous optimization', asyn
       };
     `);
 
-    expect(stats.points).toBeGreaterThan(100);
+    // Exact inference reaches the posterior immediately, so the optimiser
+    // converges as soon as the 100-sample stability window is full (it no
+    // longer needs the many iterations the old forward optimiser took).
+    expect(stats.points).toBeGreaterThanOrEqual(100);
     expect(stats.recentLikelihoodRange).toBeLessThan(0.01);
     expect(stats.recentDeltaMax).toBeLessThan(0.01);
     expect(Math.abs(stats.current - stats.best)).toBeLessThan(1e-9);

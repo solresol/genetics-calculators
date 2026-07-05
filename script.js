@@ -1,5 +1,6 @@
 import { Individual as BaseIndividual } from './src/individual.js';
 import { Optimizer as BaseOptimizer } from './src/optimizer.js';
+import { inferExact, canInferExact } from './src/inference.js';
 import { probabilityToFraction } from './src/probability_fraction.js';
 import { predefinedScenarios } from './predefined_scenarios.js';
 
@@ -547,22 +548,43 @@ class Individual extends BaseIndividual {
             
             /**
              * Recalculate probabilities for every individual.
+             *
+             * Founder priors are refreshed from the current population carrier
+             * frequency, then exact Bayesian inference (src/inference.js)
+             * produces the posterior marginals so that an affected individual
+             * correctly raises the carrier probability of ALL relatives. For
+             * very large pedigrees the legacy forward propagation is used.
              */
             updateAllProbabilities() {
+                // Refresh founder priors from the current condition/frequency.
+                // inferExact reads its founder priors from originalProbabilities,
+                // which updateFromPopulationFrequency sets.
+                for (const individual of this.individuals) {
+                    if (individual.parents.length === 0) {
+                        individual.updateFromPopulationFrequency();
+                    }
+                }
+
+                if (canInferExact(this)) {
+                    inferExact(this);
+                } else {
+                    this._dataNLL = null;
+                    this.updateAllProbabilitiesForward();
+                }
+
+                this.checkDataCompleteness();
+            }
+
+            /**
+             * Legacy forward-propagation fallback for pedigrees too large for
+             * exact enumeration. Under-constrains ancestors/collaterals.
+             */
+            updateAllProbabilitiesForward() {
                 const obligateCarriers = new Set();
 
-                // Update probabilities for all individuals based on their parents
                 for (let individual of this.individuals) {
                     if (individual.parents.length === 2) {
                         individual.calculateFromParents();
-                    } else if (individual.parents.length === 0) {
-                        // Only refresh from population data if the user hasn't
-                        // manually modified this founder's probabilities
-                        const same = individual.probabilities.every((p, i) =>
-                            Math.abs(p - individual.originalProbabilities[i]) < 1e-9);
-                        if (same) {
-                            individual.updateFromPopulationFrequency();
-                        }
                     }
                 }
 
@@ -602,8 +624,6 @@ class Individual extends BaseIndividual {
                         }
                     }
                 }
-
-                this.checkDataCompleteness();
             }
 
             checkDataCompleteness() {
@@ -1000,8 +1020,15 @@ class Individual extends BaseIndividual {
              * @returns {number}
              */
             calculateNegativeLogLikelihood() {
+                // Exact inference stores the true data negative log-likelihood
+                // (-log P(observed phenotypes)). The per-individual marginals are
+                // already conditioned on all evidence, so summing them here would
+                // give ~0; use the stored value instead.
+                if (typeof this._dataNLL === 'number' && Number.isFinite(this._dataNLL)) {
+                    return this._dataNLL;
+                }
                 let logLikelihood = 0;
-                
+
                 for (let individual of this.individuals) {
                     // Skip hypothetical individuals - they don't contribute to likelihood
                     if (individual.hypothetical) {
