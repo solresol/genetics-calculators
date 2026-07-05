@@ -155,9 +155,15 @@ This application includes carrier frequency data for **5 autosomal recessive con
 The **carrier frequency** is the proportion of the population that has one normal and one disease allele (genotype −/+ or +/−).
 
 For example, an 11% carrier frequency for Hemochromatosis in Europeans means:
-- 11 out of 100 people are carriers
-- ~1.2 out of 10,000 are affected (11% × 11% × 25% ≈ 0.012%)
-- Two random Europeans have ~0.3% chance of both being carriers
+- 11 out of 100 people are carriers (genotype −/+ or +/−)
+- the underlying **disease-allele** frequency is `a = (1 − √(1 − 2×0.11)) / 2 ≈ 0.058`
+- about `a² ≈ 0.34%` of people are affected (genotype +/+) — roughly 1 in 290
+- two random Europeans have about `11% × 11% ≈ 1.2%` chance of both being carriers
+
+The affected prevalence is the square of the **allele** frequency `a`, not of the
+**carrier** frequency `c`. Because `c = 2a(1 − a)` (carriers), using the carrier
+frequency directly as the allele frequency overstates the affected rate roughly
+fourfold.
 
 See [GENETICS_TUTORIAL.md](GENETICS_TUTORIAL.md) for detailed explanations of carrier probabilities and Mendelian inheritance.
 
@@ -226,7 +232,8 @@ Although biologically equivalent (both are carriers), tracking parent-of-origin 
 
 **Founder with population frequency** (CF in European, 2.9% carriers):
 ```
-[0.9707, 0.0145, 0.0145, 0.0004]  ← Based on Hardy-Weinberg equilibrium
+[0.9708, 0.0145, 0.0145, 0.0002]  ← Hardy-Weinberg: allele freq a≈0.0147, so
+                                     carrier sum 2a(1−a)=0.029 and affected a²≈0.0002
 ```
 
 **Child of two confirmed carriers**:
@@ -256,8 +263,12 @@ For detailed mathematics, see [GENETICS_TUTORIAL.md](GENETICS_TUTORIAL.md#the-4-
 1. Load "Hypothetical Child with Afflicted Cousin" scenario
 2. Individual 6 (affected cousin) establishes carrier status in parents
 3. Individual 4 (aunt) is sibling of carrier parent
-4. Optimization shows ~2/3 carrier probability for aunt (not 1/2, because unaffected)
-5. Hypothetical child 8 shows ~0.5% risk (higher than population 0.0006%)
+4. Exact inference shows ~1/2 (≈0.50) carrier probability for the aunt. The
+   grandparents are general-population founders, so the evidence points to
+   *exactly one* of them being a carrier; the aunt then inherits w.p. ~1/2. (The
+   classic "2/3" only applies when both grandparents are *known* carriers.)
+5. Hypothetical child 8 shows ~0.31% affected risk (0.50 × 0.025 × 0.25), well
+   above the general-population baseline of ~0.016% (= (c/2)² for c=2.5%)
 
 ### 3. Population-Specific Risk
 **Scenario**: Ashkenazi Jewish couple considering Tay-Sachs screening
@@ -266,7 +277,9 @@ For detailed mathematics, see [GENETICS_TUTORIAL.md](GENETICS_TUTORIAL.md#the-4-
 1. Load "Tay-Sachs - European Ancestry" scenario (using 0.34% as proxy)
 2. If actual Ashkenazi frequency is 3.4%, manually update frequency table
 3. Add hypothetical child between unrelated founders
-4. Risk = 3.4% × 3.4% × 25% ≈ 0.03% (1 in 3,600) vs general population 1 in 250,000
+4. Risk for this couple's child = 3.4% × 3.4% × 25% ≈ 0.03% (≈1 in 3,400; note
+   `c × c × 25% = (c/2)²`, the square of the allele frequency) vs a general
+   Tay-Sachs population prevalence of `a² ≈ (0.2%/2)² ≈ 1 in 1,000,000`
 
 ### 4. Multi-Generation Pedigrees
 **Scenario**: Affected individual in third generation, determining carrier status of grandparents

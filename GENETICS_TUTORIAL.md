@@ -66,9 +66,12 @@ For any individual, probabilities must:
 
 **Typical founder** (no family history, general population):
 ```
-[0.975, 0.0125, 0.0125, 0.00000625]  ← Based on carrier frequency ~0.025
+[0.9748, 0.0125, 0.0125, 0.00016]  ← carrier frequency c ≈ 0.025
 ```
-The tiny P(+/+) reflects the very low chance two random people are both carriers.
+The disease-**allele** frequency is `a = (1 − √(1 − 2c))/2 ≈ 0.0127`, so the two
+carrier states sum to `2a(1 − a) = c ≈ 0.025` and `P(+/+) = a² ≈ 0.00016`. (Note
+the affected probability is `a²`, not `c²`: the carrier frequency is roughly
+twice the allele frequency.)
 
 ---
 
@@ -268,22 +271,37 @@ This is a common genetic counseling scenario:
 #### Analysis
 
 **Individual 3** (parent of affected 6):
-- MUST be a carrier
+- MUST be a carrier (obligate carrier)
+
+**Grandparents 1 & 2**:
+- The affected grandchild forces *at least one* of them to carry a disease
+  allele, so exact inference raises both from the ~2.5% population baseline to
+  ~50% carrier probability.
+- Two population founders are very unlikely to *both* be carriers, so the
+  evidence points to exactly one carrier grandparent.
 
 **Individual 4** (parent of hypothetical 8):
-- SIBLING of Individual 3
-- If parents (1 and 2) are both carriers:
-  - 2/3 chance of being a carrier (not 1/2, because we know 4 is unaffected)
-  - The "2/3" comes from the conditional probability given unaffected status
+- SIBLING of Individual 3.
+- Exact inference gives a carrier probability of **~1/2 (≈0.50)**: she inherits
+  the single disease allele that runs in the family with probability ~1/2.
+- The textbook "2/3" figure applies only when both grandparents are *known*
+  carriers (a child of two carriers, conditioned on being unaffected, is 2/3
+  carrier). Here the grandparents are population founders, not certain carriers,
+  so the correct value is ~1/2.
 
 **Individual 8's risk**:
-- Depends on:
-  - Probability that 4 is a carrier (~2/3)
-  - Probability that 7 (unrelated spouse) is a carrier (~2.9% for CF in European population)
-- If both are carriers: 25% chance affected
-- Combined risk ≈ 2/3 × 0.029 × 0.25 ≈ 0.48%
+- Probability that 4 is a carrier (~0.50)
+- Probability that 7 (unrelated spouse, general population) is a carrier (~2.5%)
+- If both are carriers, 25% of children are affected
+- Combined risk ≈ 0.50 × 0.025 × 0.25 ≈ **0.31%**
 
-This is **higher than population risk** (0.000625) but still relatively low.
+This is far **higher than the general-population baseline** (≈0.016%, i.e.
+`(c/2)²` for `c = 2.5%`) but still low in absolute terms.
+
+> Earlier drafts of this tutorial quoted ~0.48% here (2/3 × 2.9% × 25%). That
+> used the European carrier frequency and assumed both grandparents were
+> carriers; the scenario as shipped uses general-population founders, for which
+> exact inference gives ~0.31%.
 
 ---
 
