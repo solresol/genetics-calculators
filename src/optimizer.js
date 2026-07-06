@@ -23,6 +23,17 @@ export class Optimizer {
         this.temperature = 1.0;
     }
 
+    /**
+     * True when the pedigree is being solved by exact enumeration
+     * (`inference.js`), in which case the posterior marginals are already
+     * optimal and the founder optimiser has nothing to improve.
+     * @returns {boolean}
+     */
+    usingExactInference() {
+        return typeof this.pedigree._dataNLL === 'number' &&
+            Number.isFinite(this.pedigree._dataNLL);
+    }
+
     performSingleStep() {
         const founders = this.pedigree.individuals.filter(
             (ind) => !ind.affected && !ind.frozen && ind.parents.length === 0
@@ -32,7 +43,16 @@ export class Optimizer {
         }
 
         const baseline = founders.map(f => [...f.probabilities]);
-        const newLikelihood = optimizeAllFoundersPowell(this.pedigree);
+        let newLikelihood;
+        if (this.usingExactInference()) {
+            // Exact inference produces the posterior directly; recompute (this
+            // is idempotent) and report the exact data likelihood rather than
+            // running Powell against a flat objective.
+            this.pedigree.updateAllProbabilities();
+            newLikelihood = this.pedigree.calculateNegativeLogLikelihood();
+        } else {
+            newLikelihood = optimizeAllFoundersPowell(this.pedigree);
+        }
 
         let delta = 0;
         for (let i = 0; i < founders.length; i++) {
@@ -123,6 +143,9 @@ export class Optimizer {
         this.initialize();
         for (let i = 0; i < maxIterations; i++) {
             if (this.performSingleStep() === null) break;
+            // Exact inference is not iterative: one step already gives the
+            // posterior, so avoid spinning for the remaining iterations.
+            if (this.usingExactInference()) break;
             if (this.noImprovementCount > 5000) break;
         }
         return this.bestLikelihood;

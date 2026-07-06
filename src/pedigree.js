@@ -1,4 +1,5 @@
 import { Individual } from './individual.js';
+import { inferExact, canInferExact } from './inference.js';
 
 export class Pedigree {
     constructor(condition = 'cf') {
@@ -69,7 +70,45 @@ export class Pedigree {
         }
     }
 
+    /**
+     * Recompute every individual's genotype probabilities.
+     *
+     * Founder priors are first refreshed from the current population carrier
+     * frequency, then exact Bayesian inference (see `inference.js`) produces the
+     * posterior marginals. Exact inference correctly propagates the evidence
+     * from an affected individual to ALL relatives (parents, grandparents,
+     * aunts/uncles, cousins), not just the immediate parents.
+     *
+     * For very large pedigrees the simulated-annealing optimiser fallback is
+     * used instead (`updateAllProbabilitiesForward`).
+     */
     updateAllProbabilities() {
+        // Refresh founder priors from population data (respects race + the
+        // current condition). This mirrors the previous behaviour so that
+        // changing the condition/frequency updates the priors. inferExact reads
+        // its founder priors from `originalProbabilities`, which this sets.
+        for (const individual of this.individuals) {
+            if (individual.parents.length === 0) {
+                individual.updateFromPopulationFrequency(this.condition);
+            }
+        }
+
+        if (canInferExact(this)) {
+            inferExact(this);
+            return;
+        }
+
+        this._dataNLL = null;
+        this.updateAllProbabilitiesForward();
+    }
+
+    /**
+     * Legacy forward-propagation update used as a fallback for pedigrees too
+     * large for exact enumeration. Constrains obligate-carrier parents and
+     * conditions unaffected siblings, then propagates forward from founders.
+     * (This under-constrains ancestors/collaterals; it is only a fallback.)
+     */
+    updateAllProbabilitiesForward() {
         const obligateCarriers = new Set();
 
         for (const individual of this.individuals) {
@@ -124,6 +163,13 @@ export class Pedigree {
     }
 
     calculateNegativeLogLikelihood() {
+        // When exact inference has run, the true data negative log-likelihood
+        // (-log P(observed phenotypes)) was computed during enumeration. The
+        // per-individual marginals are already conditioned on all evidence, so
+        // summing them here would incorrectly yield ~0; use the stored value.
+        if (typeof this._dataNLL === 'number' && Number.isFinite(this._dataNLL)) {
+            return this._dataNLL;
+        }
         let logLikelihood = 0;
         for (const individual of this.individuals) {
             if (individual.hypothetical) continue;

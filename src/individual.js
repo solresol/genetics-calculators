@@ -13,6 +13,35 @@
 import { getCarrierFrequency } from './population.js';
 
 /**
+ * Convert a carrier (heterozygote) frequency into the underlying disease-allele
+ * frequency under Hardy-Weinberg equilibrium.
+ *
+ * The population data in `population.js` stores CARRIER frequencies c, i.e. the
+ * proportion of people with exactly one disease allele (genotype neg/pos or
+ * pos/neg). Under Hardy-Weinberg, if the disease-allele frequency is `a` then
+ * the carrier frequency is `c = 2a(1 - a)`. To recover the genotype
+ * distribution we must first solve this for `a` on the biologically meaningful
+ * branch a ∈ [0, 0.5]:
+ *
+ *     a = (1 - sqrt(1 - 2c)) / 2
+ *
+ * For small c this is approximately c/2 (a common clinical shortcut), but the
+ * exact form is used here so that `2a(1 - a)` reproduces the stored carrier
+ * frequency exactly.
+ *
+ * @param {number} carrierFrequency - Carrier (heterozygote) frequency c.
+ * @returns {number} Disease-allele frequency a in [0, 0.5].
+ */
+export function carrierFrequencyToAlleleFrequency(carrierFrequency) {
+    if (!(carrierFrequency > 0)) return 0;
+    // 2a(1 - a) attains its maximum of 0.5 at a = 0.5; clamp so sqrt stays real.
+    const c = Math.min(carrierFrequency, 0.5);
+    const discriminant = 1 - 2 * c;
+    if (discriminant <= 0) return 0.5;
+    return (1 - Math.sqrt(discriminant)) / 2;
+}
+
+/**
  * Converts a genotype index (0-3) to allele pair representation
  *
  * @param {number} index - Genotype index (0-3)
@@ -159,10 +188,18 @@ export class Individual {
     /**
      * Update probabilities based on population carrier frequency
      *
-     * Uses Hardy-Weinberg equilibrium assuming:
-     * - Carrier frequency q (from population data)
-     * - Normal allele frequency p = 1 - q
-     * - Genotype frequencies: [p², pq, qp, q²]
+     * The values in `population.js` are CARRIER (heterozygote) frequencies, not
+     * disease-allele frequencies. Under Hardy-Weinberg equilibrium a carrier
+     * frequency c corresponds to a disease-allele frequency
+     * `a = (1 - sqrt(1 - 2c)) / 2`, from which the genotype distribution is:
+     *
+     * - P(neg/neg) = (1 - a)²
+     * - P(neg/pos) = P(pos/neg) = a(1 - a)   (so the carrier sum is 2a(1-a) = c)
+     * - P(pos/pos) = a²                        (≈ (c/2)² for small c)
+     *
+     * (The previous implementation treated the carrier frequency as the allele
+     * frequency, which doubled the carrier probability and quadrupled the
+     * affected probability.)
      *
      * Only updates founders (no parents) who are not frozen.
      *
@@ -170,12 +207,12 @@ export class Individual {
      */
     updateFromPopulationFrequency(condition) {
         if (!this.race || this.frozen) return;
-        const frequency = getCarrierFrequency(condition, this.race);
-        if (frequency !== null) {
-            const q = frequency;
-            const p = 1 - q;
+        const carrierFrequency = getCarrierFrequency(condition, this.race);
+        if (carrierFrequency !== null) {
+            const a = carrierFrequencyToAlleleFrequency(carrierFrequency);
+            const p = 1 - a;
             if (!this.affected) {
-                this.probabilities = [p * p, p * q, q * p, q * q];
+                this.probabilities = [p * p, p * a, a * p, a * a];
             }
             this.validateAndNormalizeProbabilities();
             this.originalProbabilities = [...this.probabilities];
