@@ -125,6 +125,10 @@ export class Individual {
         this.probabilities = [0.25, 0.25, 0.25, 0.25];
         this.originalProbabilities = [...this.probabilities];
         this.frozen = false;
+        // Signature (condition|race) of the last population prior applied by
+        // updateFromPopulationFrequency(); lets that method avoid clobbering
+        // candidate founder probabilities when the input has not changed.
+        this._populationPriorSignature = null;
     }
 
     /**
@@ -209,6 +213,16 @@ export class Individual {
         if (!this.race || this.frozen) return;
         const carrierFrequency = getCarrierFrequency(condition, this.race);
         if (carrierFrequency !== null) {
+            // Only (re)derive the population prior when the condition/race input
+            // has actually changed. During the founder-optimisation fallback the
+            // optimiser sets candidate founder probabilities and then calls
+            // pedigree.updateAllProbabilities(); resetting the prior here on every
+            // call would overwrite each candidate back to the population baseline
+            // before the likelihood is evaluated, flattening the objective and
+            // leaving founder/ancestor risks pinned at baseline.
+            const signature = `${condition}|${this.race}`;
+            if (signature === this._populationPriorSignature) return;
+            this._populationPriorSignature = signature;
             const a = carrierFrequencyToAlleleFrequency(carrierFrequency);
             const p = 1 - a;
             if (!this.affected) {
